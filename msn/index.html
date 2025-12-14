@@ -1,0 +1,1146 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MSN Messenger - Pinchi & Chimpi (verde)</title>
+  <link rel="icon" type="image/png" href="./resources/msn_logo.png">
+  <style>
+    :root {
+      --accent: #3cb371;
+      --accent-light: #8fdda8;
+      --accent-dark: #2e8b57;
+      --bg: #cfe3f2;
+      --card: #f0f4f8;
+      --text: #111;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+    }
+
+    .window {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+      background: var(--bg);
+      /* usa la variable del tema */
+      overflow: hidden;
+    }
+
+
+    .title-bar {
+      background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+      color: white;
+      padding: 8px 12px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 16px;
+    }
+
+    .title-bar img {
+      height: 20px;
+      margin-right: 8px;
+    }
+
+    .chat-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px 20px 12px 12px;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .avatar-top,
+    .avatar-bottom {
+      position: fixed;
+      right: 20px;
+      width: 120px;
+      height: 120px;
+      background-color: #e0e0e0;
+      border: 2px solid #999;
+      border-radius: 4px;
+      background-size: cover;
+      background-position: center;
+      box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+      z-index: 5000;
+    }
+
+    .avatar-top {
+      top: 50px;
+      background-image: url('./resources/chimpi_1.png');
+    }
+
+    .avatar-bottom {
+      bottom: 180px;
+      background-image: url('./resources/pinchi_1.png');
+    }
+
+
+    .message-container {
+      display: flex;
+      flex-direction: column;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+
+    .message-container.pinchi {
+      align-self: flex-start;
+    }
+
+    .message-container.chimpy {
+      align-self: flex-start;
+    }
+
+    .nick {
+      font-weight: bold;
+      font-size: 12px;
+      margin-bottom: 4px;
+      color: #333;
+    }
+
+    .message {
+      padding: 10px 14px;
+      border-radius: 12px;
+      line-height: 1.3;
+      white-space: pre-wrap;
+      color: var(--text);
+      margin: 2px 0;
+      overflow-wrap: break-word;
+    }
+
+    .pinchi .message {
+      background: var(--pinchi-bg);
+      border: 1px solid var(--accent-dark);
+    }
+
+    .chimpy .message {
+      background: var(--chimpy-bg);
+      border: 1px solid var(--accent-dark);
+    }
+
+
+    .controls {
+      display: flex;
+      flex-wrap: column;
+      gap: 12px;
+      padding: 12px;
+      border-top: 1px solid #ccc;
+      background: linear-gradient(to bottom, #f0f4f8, #e0e8f0);
+      align-items: center;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .controls img,
+    .controls button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .controls img:hover,
+    .controls button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .controls img {
+      background: white;
+    }
+
+    .controls button {
+      background: var(--accent);
+      color: white;
+      padding: 8px 14px;
+      font-size: 14px;
+    }
+
+    .controls label {
+      font-size: 14px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #fff;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    .controls input[type="number"],
+    .controls select,
+    .controls input[type="color"] {
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      padding: 4px 6px;
+      cursor: pointer;
+    }
+
+    .controls input[type="checkbox"] {
+      transform: scale(1.1);
+    }
+
+    /* ----- DROPDOWN ----- */
+
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropbtn {
+      background: var(--accent);
+    }
+
+    /* --- MENÚ DESPLEGABLE HACIA ARRIBA --- */
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      bottom: 100%;
+      left: 0;
+      background-color: #ffffff;
+      min-width: 180px;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      z-index: 1000000000000;
+
+      flex-direction: column;
+      gap: 10px;
+    }
+
+
+    /* Cuando está abierto */
+    .dropdown.open .dropdown-content {
+      display: flex;
+    }
+
+    /* Que los labels no se vean pegados */
+    .dropdown-content label {
+      font-size: 13px;
+      color: #222;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .input-area {
+      display: flex;
+      border-top: 1px solid #ccc;
+      background: var(--card);
+      padding: 8px;
+      gap: 8px;
+      position: sticky;
+      bottom: 0;
+    }
+
+    .input-area [contenteditable] {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #bbb;
+      font-size: 14px;
+      min-height: 38px;
+      outline: none;
+      background: white;
+      color: var(--text);
+    }
+
+    .input-area button {
+      background: var(--accent-dark);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+
+    .empty::after {
+      content: attr(data-placeholder);
+      color: #888;
+      pointer-events: none;
+    }
+
+    .chat-video {
+      max-width: 300px;
+      border-radius: 12px;
+      margin: 8px 0;
+    }
+
+    .message-container.aviso .message {
+      background: #fff4c2;
+      border: 1px solid #ffd700;
+      color: #333;
+      font-weight: bold;
+      max-width: 300px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      word-wrap: break-word;
+    }
+
+    @media (max-width: 600px) {
+      .chat-box {
+        padding-right: 100px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <audio id="soundNotification" src="./resources/msn-sound-notification.mp3" preload="auto"></audio>
+  <div class="window" id="chatWindow">
+    <div class="title-bar">
+      <div style="display:flex;align-items:center;"><img src="./resources/msn_logo.png" alt="MSN"> Chat - Pinchi &
+        Chimpi</div>
+      <label style="font-size:13px;opacity:0.95">
+        Tema:
+        <select id="themeSelect">
+          <option value="original">MSN 7.0</option>
+          <option value="verde">MSN 8.0</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="confetti-container"
+      style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:9998;">
+    </div>
+
+    <div class="chat-box" id="chat">
+      <div class="avatar-top" aria-hidden="true"></div>
+      <div class="avatar-bottom" aria-hidden="true"></div>
+    </div>
+
+    <div class="controls">
+      <img id="buzz" src="./resources/msn-icon-zumbido.png" height="35px" width="35px" />
+      <img id="pig" src="./resources/msn-cerdito.ico" height="35px" width="35px" />
+      <img id="angry" src="./resources/msn-angry.jpg" height="35px" width="35px" />
+      <div class="dropdown">
+        <img class="dropbtn" src="./resources/msn-ajustes.png" height="35px" width="35px" />
+        <div class="dropdown-content">
+          <label>Fuente:
+            <select id="fontSelect">
+              <option value="Comic Sans MS">Comic Sans</option>
+              <option value="Arial">Arial</option>
+              <option value="Courier New">Courier New</option>
+              <option value="Verdana">Verdana</option>
+            </select>
+          </label>
+          <label>Tamaño:
+            <input type="number" id="fontSize" value="14" min="10" max="36">
+          </label>
+          <label>Color:
+            <input type="color" id="colorPicker" value="#000000">
+          </label>
+          <label><input type="checkbox" id="boldToggle"> Negrita</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input de mensaje siempre abajo -->
+    <div class="input-area">
+      <div id="input" contenteditable="true" class="empty" data-placeholder="Escribe un mensaje..."></div>
+      <button id="send">Enviar</button>
+    </div>
+
+    <audio id="buzzSound" src="./resources/msn-zumbido.mp3" preload="auto"></audio>
+
+    <script>
+      const soundNotification = document.getElementById('soundNotification');
+      const chat = document.getElementById('chat');
+      const input = document.getElementById('input');
+      const sendBtn = document.getElementById('send');
+      const buzzBtn = document.getElementById('buzz');
+      const pigBtn = document.getElementById('pig');
+      const angryBtn = document.getElementById('angry');
+      const chatWindow = document.getElementById('chatWindow');
+      const buzzSound = document.getElementById('buzzSound');
+
+      const fontSelect = document.getElementById('fontSelect');
+      const fontSize = document.getElementById('fontSize');
+      const colorPicker = document.getElementById('colorPicker');
+      const boldToggle = document.getElementById('boldToggle');
+      const themeSelect = document.getElementById('themeSelect');
+
+      document.querySelector(".dropbtn").addEventListener("click", () => {
+        document.querySelector(".dropdown").classList.toggle("open");
+      });
+
+      // Cerrar el menú al hacer click fuera
+      document.addEventListener("click", function (e) {
+        const dropdown = document.querySelector(".dropdown");
+        const button = document.querySelector(".dropbtn");
+        const content = document.querySelector(".dropdown-content");
+
+        // Si haces click FUERA del botón y del panel → cerrar
+        if (!dropdown.contains(e.target)) {
+          dropdown.classList.remove("open");
+        }
+      });
+
+      let isPlayPig = false;
+      let lastSender = '';
+      let lastMessagePinchi = '';
+      let numResponses = 0;
+      let pruebasSuperadas = 0;
+
+      const themes = {
+        verde: {
+          '--accent': '#5fcf91',
+          '--accent-dark': '#2e8b57',
+          '--bg': '#e6f9ef',
+          '--card': '#f4f9f6',
+          '--text': '#111',
+          '--pinchi-bg': 'linear-gradient(180deg, #dff6e8, #c4ecd5)',
+          '--chimpy-bg': '#ffffff'
+        },
+        original: {
+          '--accent': '#0078d7',
+          '--accent-dark': '#004a9f',
+          '--bg': '#e5f0ff',
+          '--card': '#ffffff',
+          '--text': '#000',
+          '--pinchi-bg': '#f0f0f0',
+          '--chimpy-bg': '#ffffff'
+        }
+      };
+
+
+      function applyTheme(name) {
+        const theme = themes[name];
+        for (const varName in theme) {
+          document.documentElement.style.setProperty(varName, theme[varName]);
+        }
+      }
+      applyTheme('original');
+      themeSelect.addEventListener('change', e => applyTheme(e.target.value));
+
+      const NICKS = { pinchi: 'Pinchi', chimpy: 'Chimpi' };
+      const respuestas = [
+        "Te quiero un montón 💖",
+        "Mi chica presiosa. ✨",
+        "Contigo todo es mejor 🌟",
+        "Eres lo más bonito que me ha pasado 💖",
+        "Gracias por estar siempre a mi lado 💙",
+        "Me haces feliz solo con tu sonrisa 🐧😊",
+        "Eres mi compañera de aventuras favorita 🐧✨"
+      ];
+
+      const mensajesGuitarra = [
+        "AY AAAY AAAAAAY! 😫 Me están pegando en el jamoncito!!",
+        "¡Socorrooo!"
+      ];
+
+      const mensajesBaile = [
+        "Te gusta como muevo la cintura?",
+        "Ten cuidado! A ver si te voy a conquistar con mis bailes 😏"
+      ];
+
+      const mensajesZumbidos = [
+        "Que te pasa???",
+        "Pero seras cansina!!",
+        "Dejate ya los zumbidos!!"
+      ];
+
+      let nivelesHecho = [];
+
+      function addMessage(text, sender, link, img) {
+
+        const container = document.createElement('div');
+        container.className = 'message-container ' + sender;
+
+        const nick = document.createElement('div');
+        nick.className = 'nick';
+        nick.textContent = NICKS[sender];
+
+        const msg = document.createElement('div');
+        msg.className = 'message ' + sender;
+
+        msg.style.color = colorPicker.value;
+        msg.style.fontFamily = fontSelect.value;
+        msg.style.fontSize = fontSize.value + 'px';
+        msg.style.fontWeight = boldToggle.checked ? 'bold' : 'normal';
+
+
+        if (link) {
+          const a = document.createElement('a');
+          a.href = link;
+          a.target = '_blank';
+          a.textContent = text;
+          msg.appendChild(a);
+        } else if (img) {
+          const image = document.createElement('img');
+          image.src = img;
+          image.alt = text || ''; // texto alternativo opcional
+          image.style.maxWidth = "200px"; // opcional, para que no se desborde
+          image.style.maxHeight = "200px"; // opcional, para que no se desborde
+
+          image.onload = () => {
+            chat.scrollTop = chat.scrollHeight;
+          };
+
+          msg.appendChild(image);
+        } else {
+          msg.textContent = text;
+        }
+
+
+        if (sender === 'chimpy') {
+          soundNotification.currentTime = 0;
+          soundNotification.play();
+          msg.style.fontFamily = 'Comic Sans MS';
+          msg.style.fontStyle = 'italic';
+          msg.style.fontWeight = 'bold';
+          msg.style.color = 'orange';
+        } else {
+          lastMessagePinchi = text
+            .toLowerCase()
+            .normalize("NFD")        // separa letras y acentos
+            .replace(/[\u0300-\u036f]/g, ""); // elimina los acentos
+        }
+
+        if (lastSender !== sender) {
+          container.appendChild(nick);
+        }
+
+        lastSender = sender;
+
+        container.appendChild(msg);
+        chat.appendChild(container);
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      function addVideo(src, time) {
+        if (isPlayPig) return;
+        isPlayPig = true;
+        const video = document.createElement('video');
+        video.src = src;
+        video.autoplay = true;
+        video.style.position = 'fixed';
+        video.style.top = '44%';
+        video.style.left = '50%';
+        video.style.width = '40%';
+        video.style.height = '75%';
+        video.style.transform = 'translate(-50%, -50%)';
+        video.style.objectFit = 'cover';
+        video.style.zIndex = 9999;
+        video.style.pointerEvents = 'none';
+        video.style.borderRadius = '12px';
+        document.body.appendChild(video);
+        setTimeout(() => {
+          document.body.removeChild(video)
+          isPlayPig = false;
+        }, time * 1000);
+      }
+
+
+
+      function enviar() {
+        const text = input.innerText.trim();
+        if (!text) return;
+        addMessage(text, 'pinchi');
+        input.innerText = '';
+        input.classList.add('empty');
+        respuestaChimpi();
+      }
+
+      fontSelect.value = 'Comic Sans MS';
+      fontSize.value = 16;
+      colorPicker.value = '#A020F0';
+
+      function actualizarEstilosInput() {
+        input.style.color = colorPicker.value;
+        input.style.fontFamily = fontSelect.value;
+        input.style.fontSize = fontSize.value + 'px';
+        input.style.fontWeight = boldToggle.checked ? 'bold' : 'normal';
+      }
+
+      fontSelect.addEventListener('change', actualizarEstilosInput);
+      fontSize.addEventListener('input', actualizarEstilosInput);
+      colorPicker.addEventListener('input', actualizarEstilosInput);
+      boldToggle.addEventListener('change', actualizarEstilosInput);
+      actualizarEstilosInput();
+
+      sendBtn.addEventListener('click', enviar);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          enviar();
+        }
+      });
+      input.addEventListener('input', () => {
+        if (input.innerText.trim().length === 0) {
+          input.classList.add('empty');
+        } else {
+          input.classList.remove('empty');
+        }
+      });
+
+      function zumbido() {
+        buzzSound.currentTime = 0;
+        buzzSound.play();
+
+        const container = document.createElement('div');
+        container.className = 'message-container aviso';
+        const msg = document.createElement('div');
+        msg.className = 'message aviso';
+        msg.textContent = '¡Has mandado un zumbido! 🔊';
+        container.appendChild(msg);
+        chat.appendChild(container);
+        chat.scrollTop = chat.scrollHeight;
+
+        let count = 0;
+        const interval = setInterval(() => {
+          const x = count % 2 === 0 ? 8 : -8;
+          chatWindow.style.transform = `translateX(${x}px)`;
+          count++;
+          if (count > 10) {
+            clearInterval(interval);
+            chatWindow.style.transform = 'translateX(0)';
+          }
+        }, 40);
+
+
+        setTimeout(() => {
+          enviarMensaje(mensajesZumbidos);
+        }, 2000);
+      }
+
+      function pigDance() {
+        if (isPlayPig) return;
+        const videoSrc = './resources/msn-pig-dance.mp4';
+        addVideo(videoSrc, 11);
+        enviarMensaje(mensajesBaile);
+      }
+
+      function videoGuitar() {
+        if (isPlayPig) return;
+        const videoSrc = './resources/msn-guitarra.mp4';
+        addVideo(videoSrc, 5);
+        enviarMensaje(mensajesGuitarra);
+      }
+
+      function enviarMensaje(lista) {
+        const index = Math.floor(Math.random() * lista.length);
+        addMessage(lista[index], 'chimpy');
+      }
+
+      function lanzarConfeti() {
+        const container = document.getElementById('confetti-container');
+        const colors = ['#ff0', '#f0f', '#0ff', '#f00', '#0f0', '#00f'];
+
+        for (let i = 0; i < 50; i++) { // cantidad de confeti
+          const confeti = document.createElement('div');
+          const size = Math.random() * 10 + 5; // tamaño aleatorio
+          confeti.style.position = 'absolute';
+          confeti.style.width = size + 'px';
+          confeti.style.height = size + 'px';
+          confeti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          confeti.style.left = Math.random() * window.innerWidth + 'px';
+          confeti.style.top = '-20px';
+          confeti.style.opacity = Math.random();
+          confeti.style.borderRadius = '50%';
+          confeti.style.pointerEvents = 'none';
+          container.appendChild(confeti);
+
+          const fallDuration = 2000 + Math.random() * 2000; // 2-4 segundos
+          const swing = (Math.random() - 0.5) * 200; // desplazamiento horizontal aleatorio
+          const rotate = Math.random() * 360; // rotación inicial
+
+          // Animación usando requestAnimationFrame
+          const start = performance.now();
+          function anim(time) {
+            const progress = (time - start) / fallDuration;
+            if (progress < 1) {
+              confeti.style.top = progress * window.innerHeight + 'px';
+              confeti.style.left = (parseFloat(confeti.style.left) + swing * 0.01) + 'px';
+              confeti.style.transform = `rotate(${rotate + progress * 360}deg)`;
+              requestAnimationFrame(anim);
+            } else {
+              container.removeChild(confeti);
+            }
+          }
+          requestAnimationFrame(anim);
+        }
+      }
+
+      function lanzarConfetiVariasVeces() {
+        for (let i = 0; i < 15; i++) {
+          setTimeout(() => {
+            lanzarConfeti();
+          }, i * 300); // intervalo entre cada confeti
+        }
+      }
+
+
+      // Event listeners para botones
+      buzzBtn.addEventListener('click', zumbido);
+      pigBtn.addEventListener('click', pigDance);
+      angryBtn.addEventListener('click', videoGuitar);
+
+
+      function respuestaChimpi() {
+
+        if (numResponses <= 1) {
+          numResponses++;
+          initMessages();
+        } else if (pruebaActual == 0) {
+          selectGame();
+        }
+
+        if (pruebaActual == 1) {
+          prueba_1();
+        }
+
+        if (pruebaActual == 2) {
+          prueba_2();
+        }
+
+        if (pruebaActual == 3) {
+          prueba_3();
+        }
+
+        if (pruebaActual == 4) {
+          prueba_4();
+        }
+
+        if (pruebaActual == 5) {
+          addMessage(respuestas[Math.floor(Math.random() * respuestas.length)], 'chimpy');
+        }
+      }
+
+      const pruebas = [];
+      let pruebaActual = 0;
+
+      function initMessages() {
+        const mensajes_init_1 = [
+          'Hola mi pinchiguina 🐧',
+          'Veo que ya has superado el parque de bolas jajaja',
+          'Pero es que este año te he preparado algo muy especial…',
+          'Y hemos viajado de vuelta a la época del MSN... la época en la que tú y yo pasábamos horas hablando de cosas indescrifrables que solo nosotros entendíamos en ese momento jajaja',
+          'Como has conseguido el ticket de oro... vas a poder participar en el primer concurso oficial de nostalgia millenial!! 😁',
+          'Yo haré de nosti 🤭',
+          'Espero que puedas volver a sentir que has vuelto átras durante un ratito y que te guste 😊',
+          'Si estas lista.. álla vamos!!'
+        ];
+
+        const mensajes_init_2 = [
+          'Que sepas... que esto cada vez se va a ir poniendo más nostagico',
+          'Puedes elegir entre estas pruebas que te he preparado:',
+          '1. Desafío Musical 🎵 ',
+          '2. ¿Quién lo dijo y quién es?',
+          '3. Guerra de Pingüinos 🐧🪖',
+          'Escribe el número de la prueba por la que quieres empezar... te dejo elegir 🙃',
+        ];
+
+
+        const mensajes = numResponses == 1 ? mensajes_init_1 : mensajes_init_2;
+
+        mensajes.forEach((mensaje, index) => {
+          setTimeout(() => {
+            addMessage(mensaje, 'chimpy');
+          }, index * 1200); // 1200ms de retraso entre cada mensaje
+        });
+      }
+
+
+      function selectGame() {
+
+        if (pruebasSuperadas == 3) {
+          pruebaActual = 4;
+        } else if (pruebasSuperadas == 4) {
+          pruebaActual = 5;
+        } else if (lastMessagePinchi.includes("1")) {
+
+          if (nivelesHecho.includes(1)) {
+            addMessage("La prueba 1 ya la tiene hecha!", 'chimpy');
+            return;
+          }
+
+          pruebaActual = 1;
+        } else if (lastMessagePinchi.includes("2")) {
+
+          if (nivelesHecho.includes(2)) {
+            addMessage("La prueba 2 ya la tiene hecha!", 'chimpy');
+            return;
+          }
+
+          pruebaActual = 2;
+        } else if (lastMessagePinchi.includes("3")) {
+
+          if (nivelesHecho.includes(3)) {
+            addMessage("La prueba 3 ya la tiene hecha!", 'chimpy');
+            return;
+          }
+
+          pruebaActual = 3;
+        } else {
+          addMessage("Tienes que poner el número de la prueba que quieras!", 'chimpy');
+          return;
+        }
+      }
+
+
+      let i = 0;
+
+      const prueba_1_preguntas = new Map([
+        [++i, { pregunta: `${i}) ¿Quien es esta cantante?`, respuesta: "julieta", msg: "¡Bien visto!", pista: "Limon y sal", img: './resources/julieta-venegas.jpg' }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "safriduo", msg: "¡Esta era fácil!", pista: "Tambores." }],
+        [++i, { pregunta: `${i}) Adivina el año en la que sonó esta canción`, respuesta: "2004", msg: "¡Correcto!", pista: "Principios de los 2000. Canción popular: 'Gasolina'." }],
+        [++i, { pregunta: `${i}) Continúa la canción: Tu saliva en… 🎶`, respuesta: "saliva", msg: "¡Correcto!", pista: "babas" }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "juanes", msg: "¡Bien visto!", pista: "Cantante colombiano muy famoso." }],
+        [++i, { pregunta: `${i}) Adivina el año`, respuesta: "2007", msg: "¡Correcto!", pista: "Año del éxito 'Umbrella'." }],
+        [++i, { pregunta: `${i}) ¿Como se llama?`, respuesta: "raul", msg: "¡Bien visto!", pista: "Tu cuñado...", img: './resources/raul_fuentes.jpg' }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "boys", msg: "¡Muy bien!", pista: "Grupo pop británico de los 90." }],
+        [++i, { pregunta: `${i}) ¿Quien canta: '…baby, baby, baby ooooh' 🎶?`, respuesta: "bieber", msg: "¡Correcto!", pista: "Cantante canadiense muy famoso." }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "amaral", msg: "¡Correcto!", pista: "Dúo español muy famoso de los 2000." }],
+        [++i, { pregunta: `${i}) ¿Quién canta 'Pobre diabla, se dice que se te ve la rabia'? 🎶`, respuesta: "omar", msg: "¡Bien ahí, clásico!", pista: "Cantante de reggaetón antiguo.." }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "transilvania", msg: "¡Correcto!", pista: "Pajarería…" }],
+        [++i, { pregunta: `${i}) ¿Como se llama?`, respuesta: "dani", msg: "¡Bien visto!", pista: "Zapatillas...", img: './resources/dani_martinez.jpg' }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "oreja", msg: "¡Correcto!", pista: "Te gusta mucho…" }],
+        [++i, { pregunta: `${i}) ¿Como se llama el grupo?`, respuesta: "girls", msg: "¡Bien visto!", pista: "Victoria..", img: './resources/spice-girls.jpg' }],
+        [++i, { pregunta: `${i}) ¿Qué grupo canta 'La flaca'? 🎶`, respuesta: "jarabe", msg: "¡Correcto!", pista: "Pau Donés." }],
+        [++i, { pregunta: `${i}) Continúa la canción: cuando tú vas, yo vengo… 🎶`, respuesta: "alli", msg: "¡Correcto!", pista: "Rima con 'aquí'." }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "cascada", msg: "¡Correcto!", pista: "Dance/pop europeo muy famoso en los 2000." }],
+        [++i, { pregunta: `${i}) Continúa la canción: 'Sobreviviré… 🎶'`, respuesta: "hogar", msg: "¡Correcto!", pista: "Monica naranjo." }],
+        [++i, { pregunta: `${i}) ¿De qué grupo es este cantante?`, respuesta: "boys", msg: "¡Bien visto!", pista: "Grupo de chicos guapos", img: './resources/nick-carter.jpg' }],
+        [++i, { pregunta: `${i}) Continúa la canción: 'Me muero por conocerte.… 🎶'`, respuesta: "saber", msg: "¡Bien!", pista: "Álex Ubago." }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "musical", msg: "¡Correcto!", pista: "Un rubito guapo…" }],
+        [++i, { pregunta: `${i}) ¿Quién canta 'Corazón partío'? 🎶`, respuesta: "sanz", msg: "¡Bien!", pista: "Alejandro..." }],
+        [++i, { pregunta: `${i}) Continúa la canción: “Soy una taza… 🎶"`, respuesta: "tetera", msg: "¡Correcto!", pista: "Para poner té." }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "hina", msg: "¡Correcto!", pista: "Love…" }],
+        [++i, { pregunta: `${i}) ¿Que grupo es?`, respuesta: "pereza", msg: "¡Bien visto!", pista: "Estoy muy cansado...", img: './resources/pereza.jpg' }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "avril", msg: "¡Correcto!", pista: "Mad Cool…" }]
+      ]);
+
+
+      let preguntaActualPrueba1 = 0;
+
+      function prueba_1() {
+
+        // Si NO es la primera vez (ya hubo una pregunta), validamos respuesta
+        if (preguntaActualPrueba1 > 0) {
+
+          const preguntaObj = prueba_1_preguntas.get(preguntaActualPrueba1);
+          const respuestaUsuario = lastMessagePinchi.toLowerCase();
+
+          if (!respuestaUsuario.includes(preguntaObj.respuesta.toLowerCase())) {
+            addMessage(preguntaObj.pista, 'chimpy');
+            return;
+          } else {
+            addMessage(preguntaObj.msg, 'chimpy');
+          }
+        }
+
+        // Pasamos a la siguiente pregunta
+        preguntaActualPrueba1++;
+
+        const obj = prueba_1_preguntas.get(preguntaActualPrueba1);
+
+        // Si ya no hay más preguntas → prueba superada
+        if (!obj) {
+          setTimeout(() => {
+            addMessage("¡Felicidades! 🎉 Has superado el desafio musical y ahora puedes recibir tu premio.", 'chimpy');
+            lanzarConfetiVariasVeces();
+            nivelesHecho.push(1);
+            pruebaActual = 0;
+            pruebasSuperadas++;
+            changeAvatar();
+
+            if (pruebasSuperadas < 3) {
+              addMessage("Luego pon el siguiente número la próxima prueba.", 'chimpy');
+            } else {
+              addMessage("Ya superastes todas las pruebas!! Que te ha parecido??.", 'chimpy');
+            }
+          }, 800);
+          return;
+        }
+
+
+        // Si es la primera pregunta → mensajes de inicio
+        const mensajes = preguntaActualPrueba1 === 1
+          ? [
+            { msg: "Muy bien! Has elegido el desafío musical... me lo imaginaba..." },
+            { msg: "En esta prueba tendrás que ir adivinando qué cantante o grupo es... y alguna otra cosa más" },
+            { msg: "Empezamos por la primera.." },
+            { msg: obj.pregunta, link: obj.link, img: obj.img }
+          ]
+          : [
+            { msg: "Vayamos a por la siguiente!" },
+            { msg: obj.pregunta, link: obj.link, img: obj.img }
+          ];
+
+        // Enviar mensajes con delay
+        mensajes.forEach((mensaje, index) => {
+          setTimeout(() => {
+
+            if (mensaje.msg && !mensaje.link) {
+              addMessage(mensaje.msg, 'chimpy');
+            }
+            if (mensaje.link) {
+              addMessage(mensaje.msg, 'chimpy', mensaje.link);
+            }
+            if (mensaje.img) {
+              addMessage(mensaje.msg, 'chimpy', null, mensaje.img);
+            }
+
+          }, index * 800);
+        });
+      }
+
+      let i_2 = 0;
+
+      const prueba_2_preguntas = new Map([
+        [++i_2, { pregunta: `${i_2}) ¿Quién dijo: '¡Eso es todo, amigos!'?`, respuesta: "bunny", msg: "¡Correcto!", pista: "Personaje animado famoso de los Looney Tunes." }],
+        [++i_2, { pregunta: `${i_2}) ¿Qué personaje Disney dice mientras tiende su mano: '¿Confías en mí?'`, respuesta: "alad", msg: "¡Bien!", pista: "Princesa y príncipe en una historia de oriente." }],
+        [++i_2, { pregunta: `${i_2}) ¿Qué película Disney tiene como frase famosa: 'Recuerda quién eres'?`, respuesta: "leon", msg: "¡Correcto!", pista: "Simba debe encontrar su lugar en la sabana." }],
+        [++i_2, { pregunta: `${i_2}) ¿Quién dice 'Multiplícate por cero'?`, respuesta: "bart", msg: "¡Correcto!", pista: "Los Simpson." }],
+        [++i_2, { pregunta: `${i_2}) ¿Cómo se llama su personaje en la serie de los protegidos?`, respuesta: "chispitas", msg: "¡Esta estaba chupada!", pista: "Saltan las chispas.", img: './resources/chispitas.webp' }],
+        [++i_2, { pregunta: `${i_2}) ¿Cómo se llama la serie donde aparece?`, respuesta: "principe", msg: "¡Esta estaba chupada!", pista: "Tio Phil.", img: './resources/principe_bel.jpg' }],
+        [++i_2, { pregunta: `${i_2}) ¿Quién dice 'A mediodía alegría'?`, respuesta: "leticia", msg: "¡Correcto!", pista: "Con mucha marcha." }],
+        [++i_2, { pregunta: `${i_2}) ¿Qué personaje dice 'Mejor afuera que adentro, siempre lo he dicho.'?`, respuesta: "shrek", msg: "¡Correcto!", pista: "Es un ogro." }],
+        [++i_2, { pregunta: `${i_2}) Nomre de la serie`, respuesta: "serrano", msg: "¡Esta estaba chupada!", pista: "1 + 1 son 7", img: './resources/serrano.jpeg' }],
+        [++i_2, { pregunta: `${i_2}) 'La vida no es un deporte de mirones: si pasas el tiempo observando, verás tu vida pasar…' ¿Qué película es?`, respuesta: "jorobado", msg: "¡Bien!", pista: "Quasimodo en París." }],
+        [++i_2, { pregunta: `${i_2}) 'La flor que florece en la adversidad es la más rara y hermosa de todas.' ¿Qué película?`, respuesta: "mulan", msg: "¡Correcto!", pista: "La dice el padre de Mulan." }],
+        [++i_2, { pregunta: `${i_2}) 'Algunas veces el camino correcto no es el más fácil.' ¿De qué película?`, respuesta: "pocahontas", msg: "¡Bien!", pista: "Palabra de la Abuela Sauce." }],
+        [++i_2, { pregunta: `${i_2}) ¿Cómo se llama?`, respuesta: "simba", msg: "¡Esta estaba chupada!", pista: "Del rey leon", img: './resources/simba.webp' }],
+        [++i_2, { pregunta: `${i_2}) 'Un héroe verdadero no lo es por el tamaño de sus músculos, sino por el de su corazón.' ¿De qué película?`, respuesta: "hercules", msg: "¡Bien!", pista: "Héroe mitológico con fuerza y buen corazón." }],
+        [++i_2, { pregunta: `${i_2}) 'Debo dejar de pretender ser algo que no soy.' ¿Qué película?`, respuesta: "alad", msg: "¡Correcto!", pista: "Lámpara mágica y alfombra voladora." }],
+        [++i_2, { pregunta: `${i_2}) ¿Quién dice 'Un poquito de por favor'?`, respuesta: "emilio", msg: "¡Correcto!", pista: "Un poquito de por favor." }],
+        [++i_2, { pregunta: `${i_2}) ¿Cómo se llaman?`, respuesta: "benito", msg: "¡Esta estaba chupada!", pista: "Manos a la obra.", img: './resources/manolo.jpg' }],
+        [++i_2, { pregunta: `${i_2}) 'Hasta el infinito y más allá!' ¿De qué película de Pixar es?`, respuesta: "toy", msg: "¡Bien!", pista: "Vaquero y guardián espacial." }],
+        [++i_2, { pregunta: `${i_2}) ¿Cómo se llaman?`, respuesta: "oompa", msg: "¡Esta estaba chupada!", pista: "Fabrica de chocolate", img: './resources/Oompa_Loompa.webp' }],
+        
+      ]);
+
+
+
+      let preguntaActualPrueba2 = 0;
+
+      function prueba_2() {
+
+        // Si NO es la primera vez (ya hubo una pregunta), validamos respuesta
+        if (preguntaActualPrueba2 > 0) {
+
+          const preguntaObj = prueba_2_preguntas.get(preguntaActualPrueba2);
+
+          // Normalizamos
+          const respuestaUsuario = lastMessagePinchi.toLowerCase();
+
+          if (!respuestaUsuario.includes(preguntaObj.respuesta.toLowerCase())) {
+            addMessage(preguntaObj.pista, 'chimpy');
+            return; // NO pasamos a la siguiente
+          } else {
+            addMessage(preguntaObj.msg, 'chimpy');
+          }
+        }
+
+        // Pasamos a la siguiente pregunta
+        preguntaActualPrueba2++;
+
+
+        const obj = prueba_2_preguntas.get(preguntaActualPrueba2);
+
+        // Si ya no hay más preguntas → prueba superada
+        if (!obj) {
+          setTimeout(() => {
+            addMessage("¡Felicidades! 🎉 Has superado ¿Quién lo dijo y quién es? y ahora puedes recibir tu premio.", 'chimpy');
+            lanzarConfetiVariasVeces();
+            pruebaActual = 0;
+            nivelesHecho.push(2);
+            pruebasSuperadas++;
+            changeAvatar();
+
+            if (pruebasSuperadas < 3) {
+              addMessage("Luego pon el siguiente número la próxima prueba.", 'chimpy');
+            } else {
+              addMessage("Ya superastes todas las pruebas!! Que te ha parecido??.", 'chimpy');
+            }
+
+          }, 800);
+          return;
+        }
+
+        // Si es la primera pregunta → mensajes de inicio
+        const mensajes = preguntaActualPrueba2 === 1
+          ? [
+            { msg: "Muy bien! Has elegido el desafio de ¿Quién lo dijo y quién es?... veremos a ver que es lo que sabes..." },
+            { msg: "En esta prueba tendrás que ir adivinando qué cantante o grupo es... y alguna otra cosa más" },
+            { msg: "Empezamos por la primera.." },
+            { msg: obj.pregunta, link: obj.link, img: obj.img }
+          ]
+          : [
+            { msg: "Vayamos a por la siguiente!" },
+            { msg: obj.pregunta, link: obj.link, img: obj.img }
+          ];
+
+        // Enviar mensajes con delay
+        mensajes.forEach((mensaje, index) => {
+          setTimeout(() => {
+
+            if (mensaje.msg) {
+              addMessage(mensaje.msg, 'chimpy');
+            }
+            if (mensaje.link) {
+              addMessage(mensaje.msg, 'chimpy', mensaje.link);
+            }
+            if (mensaje.img) {
+              addMessage(mensaje.msg, 'chimpy', null, mensaje.img);
+            }
+
+          }, index * 800);
+        });
+      }
+
+
+
+      let preguntaActualPrueba3 = 0;
+
+      function prueba_3() {
+
+        // Si es la primera pregunta → mensajes de inicio
+        const mensajes = [
+          { msg: "Muy bien! Has elegido la batalla de pinguinos... estas acabada jujuju." },
+          { msg: "En esta prueba tendrás que ganarme a una batalla de vida o muerte... si por casualidad ganaras.. dime la palabra 'gane'" },
+          { msg: "Guerra de pinguinos", link: "./resources/ConquerAntarctica.exe" }
+        ];
+
+        const respuestaUsuario = lastMessagePinchi.toLowerCase();
+
+        if (preguntaActualPrueba3 != 0) {
+          if (respuestaUsuario.includes("gane")) {
+            addMessage("¡Felicidades! 🎉 Has superado la batalla de pinguinos y ahora puedes recibir tu premio.", 'chimpy');
+            lanzarConfetiVariasVeces();
+            pruebaActual = 0;
+            nivelesHecho.push(3);
+            pruebasSuperadas++;
+            changeAvatar();
+
+            if (pruebasSuperadas < 3) {
+              addMessage("Luego pon el siguiente número la próxima prueba.", 'chimpy');
+            } else {
+              addMessage("Ya superastes todas las pruebas!! Que te ha parecido??.", 'chimpy');
+            }
+          } else {
+            addMessage('A que esperas a ganarme...?', 'chimpy');
+          }
+
+          return;
+        }
+
+        preguntaActualPrueba3++;
+
+        // Enviar mensajes con delay
+        mensajes.forEach((mensaje, index) => {
+          setTimeout(() => {
+
+            if (mensaje.msg && !mensaje.link) {
+              addMessage(mensaje.msg, 'chimpy');
+            }
+            if (mensaje.link) {
+              addMessage(mensaje.msg, 'chimpy', mensaje.link);
+            }
+            if (mensaje.img) {
+              addMessage(mensaje.msg, 'chimpy', null, mensaje.img);
+            }
+
+          }, index * 800);
+        });
+      }
+
+
+      let preguntaActualPrueba4 = 0;
+
+      function prueba_4() {
+
+        // Si es la primera pregunta → mensajes de inicio
+        const mensajes = [
+          { msg: "Jajajajaja pensabas que esto era todo?? Aun te queda el reto más dificil..." },
+          { msg: "Supera esta prueba... si por casualidad vuelves a ganar.. dime la palabra 'gane'" },
+          { msg: "Tus peores sueños", link: "./resources/CumplePinchi2025.exe" }
+        ];
+
+        const respuestaUsuario = lastMessagePinchi.toLowerCase();
+
+        if (preguntaActualPrueba4 != 0) {
+          if (respuestaUsuario.includes("gane")) {
+            addMessage("¡Felicidades! 🎉 Has superado tus peores sueños y ahora puedes recibir tu premio... ¿Que hay más nostalgico que tu en la casa?", 'chimpy');
+
+
+            for (let i = 0; i < 10; i++) {
+              setTimeout(() => {
+                lanzarConfetiVariasVeces();
+              }, i * 2000); // intervalo entre cada confeti
+            }
+
+            addVideo("./resources/madagascar.mp4", 20);
+            pruebaActual = 0;
+            pruebasSuperadas++;
+
+          } else {
+            addMessage('A que esperas a ganarme...?', 'chimpy');
+          }
+
+          return;
+        }
+
+        preguntaActualPrueba4++;
+
+        // Enviar mensajes con delay
+        mensajes.forEach((mensaje, index) => {
+          setTimeout(() => {
+
+            if (mensaje.msg && !mensaje.link) {
+              addMessage(mensaje.msg, 'chimpy');
+            }
+            if (mensaje.link) {
+              addMessage(mensaje.msg, 'chimpy', mensaje.link);
+            }
+            if (mensaje.img) {
+              addMessage(mensaje.msg, 'chimpy', null, mensaje.img);
+            }
+
+          }, index * 800);
+        });
+      }
+
+      function changeAvatar() {
+        // Seleccionamos el elemento
+        const avatarTop = document.querySelector('.avatar-top');
+        const avatarBottom = document.querySelector('.avatar-bottom');
+
+        if (pruebasSuperadas == 1) {
+          avatarTop.style.backgroundImage = "url('./resources/chimpi_2.jpg')";
+          avatarBottom.style.backgroundImage = "url('./resources/pinchi_2.jpg')";
+        }
+
+        if (pruebasSuperadas == 2) {
+          avatarTop.style.backgroundImage = "url('./resources/chimpi_3.png')";
+          avatarBottom.style.backgroundImage = "url('./resources/pinchi_3.jpg')";
+
+        }
+
+        if (pruebasSuperadas == 3) {
+          avatarTop.style.backgroundImage = "url('./resources/chimpi.jpg')";
+          avatarBottom.style.backgroundImage = "url('./resources/pinchi.jpg')";
+
+        }
+      }
+
+
+
+    </script>
+</body>
+
+</html>
