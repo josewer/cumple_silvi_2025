@@ -390,6 +390,8 @@
       });
 
       let isPlayPig = false;
+      let isPlayAudio = false;
+      let currentAudio = null;
       let lastSender = '';
       let lastMessagePinchi = '';
       let numResponses = 0;
@@ -545,6 +547,33 @@
       }
 
 
+      function addAudio(src, time) {
+        if (isPlayAudio) return;
+        isPlayAudio = true;
+
+        currentAudio = document.createElement('audio');
+        currentAudio.src = src;
+        currentAudio.autoplay = true;
+        currentAudio.style.display = 'none';
+        document.body.appendChild(currentAudio);
+
+        currentAudio._timeout = setTimeout(() => {
+          stopAudio();
+        }, time * 1000);
+      }
+
+
+      function stopAudio() {
+        if (!currentAudio) return;
+
+        clearTimeout(currentAudio._timeout);
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        document.body.removeChild(currentAudio);
+
+        currentAudio = null;
+        isPlayAudio = false;
+      }
 
       function enviar() {
         const text = input.innerText.trim();
@@ -796,32 +825,32 @@
 
       const prueba_1_preguntas = new Map([
         [++i, { pregunta: `${i}) ¿Quien es esta cantante?`, respuesta: "julieta", msg: "¡Bien visto!", pista: "Limon y sal", img: './resources/julieta-venegas.jpg' }],
-        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "safriduo", msg: "¡Esta era fácil!", pista: "Tambores." }],
-        [++i, { pregunta: `${i}) Adivina el año en la que sonó esta canción`, respuesta: "2004", msg: "¡Correcto!", pista: "Principios de los 2000. Canción popular: 'Gasolina'." }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "safriduo", msg: "¡Esta era fácil!", pista: "Tambores.", audio: './resources/safriduo.mp3', timeInit: 1, addTime: 2, timeMax: 60 }],
+        [++i, { pregunta: `${i}) Adivina el año en la que sonó esta canción`, respuesta: "2004", msg: "¡Correcto!", pista: "Principios de los 2000. Canción popular: 'Gasolina'." , audio: './resources/daddy_yankee.mp3', timeInit: 1, addTime: 2, timeMax: 60  }],
         [++i, { pregunta: `${i}) Continúa la canción: Tu saliva en… 🎶`, respuesta: "saliva", msg: "¡Correcto!", pista: "babas" }],
-        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "juanes", msg: "¡Bien visto!", pista: "Cantante colombiano muy famoso." }],
-        [++i, { pregunta: `${i}) Adivina el año`, respuesta: "2007", msg: "¡Correcto!", pista: "Año del éxito 'Umbrella'." }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "juanes", msg: "¡Bien visto!", pista: "Cantante colombiano muy famoso." , audio: './resources/juanes.mp3', timeInit: 15, addTime: 2, timeMax: 60 }],
+        [++i, { pregunta: `${i}) Adivina el año`, respuesta: "2007", msg: "¡Correcto!", pista: "Año del éxito 'Umbrella'." , audio: './resources/rihanna.mp3', timeInit: 2, addTime: 2, timeMax: 60}],
         [++i, { pregunta: `${i}) ¿Como se llama?`, respuesta: "raul", msg: "¡Bien visto!", pista: "Tu cuñado...", img: './resources/raul_fuentes.jpg' }],
-        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "boys", msg: "¡Muy bien!", pista: "Grupo pop británico de los 90." }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "boys", msg: "¡Muy bien!", pista: "Grupo pop británico de los 90." , audio: './resources/backstreet _boys.mp3', timeInit: 10, addTime: 2, timeMax: 60 }],
         [++i, { pregunta: `${i}) ¿Quien canta: '…baby, baby, baby ooooh' 🎶?`, respuesta: "bieber", msg: "¡Correcto!", pista: "Cantante canadiense muy famoso." }],
-        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "amaral", msg: "¡Correcto!", pista: "Dúo español muy famoso de los 2000." }],
-        [++i, { pregunta: `${i}) ¿Quién canta 'Pobre diabla, se dice que se te ve la rabia'? 🎶`, respuesta: "omar", msg: "¡Bien ahí, clásico!", pista: "Cantante de reggaetón antiguo.." }],
-        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "transilvania", msg: "¡Correcto!", pista: "Pajarería…" }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "amaral", msg: "¡Correcto!", pista: "Dúo español muy famoso de los 2000." , audio: './resources/amaral.mp3', timeInit: 1, addTime: 2, timeMax: 60 }],
+        [++i, { pregunta: `${i}) ¿Quién canta 'Pobre diabla, se dice que se te ve la rabia'? 🎶`, respuesta: "omar", msg: "¡Bien ahí, clásico!", pista: "Cantante de reggaetón antiguo.."}],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "transilvania", msg: "¡Correcto!", pista: "Pajarería…" , audio: './resources/pajararia_transilvania.mp3', timeInit: 7, addTime: 2, timeMax: 60}],
         [++i, { pregunta: `${i}) ¿Como se llama?`, respuesta: "dani", msg: "¡Bien visto!", pista: "Zapatillas...", img: './resources/dani_martinez.jpg' }],
-        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "oreja", msg: "¡Correcto!", pista: "Te gusta mucho…" }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "oreja", msg: "¡Correcto!", pista: "Te gusta mucho…" , audio: './resources/oreja.mp3', timeInit: 3, addTime: 2, timeMax: 60}],
         [++i, { pregunta: `${i}) ¿Como se llama el grupo?`, respuesta: "girls", msg: "¡Bien visto!", pista: "Victoria..", img: './resources/spice-girls.jpg' }],
         [++i, { pregunta: `${i}) ¿Qué grupo canta 'La flaca'? 🎶`, respuesta: "jarabe", msg: "¡Correcto!", pista: "Pau Donés." }],
         [++i, { pregunta: `${i}) Continúa la canción: cuando tú vas, yo vengo… 🎶`, respuesta: "alli", msg: "¡Correcto!", pista: "Rima con 'aquí'." }],
-        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "cascada", msg: "¡Correcto!", pista: "Dance/pop europeo muy famoso en los 2000." }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "cascada", msg: "¡Correcto!", pista: "Dance/pop europeo muy famoso en los 2000." , audio: './resources/cascada.mp3', timeInit: 7, addTime: 2, timeMax: 60 }],
         [++i, { pregunta: `${i}) Continúa la canción: 'Sobreviviré… 🎶'`, respuesta: "hogar", msg: "¡Correcto!", pista: "Monica naranjo." }],
         [++i, { pregunta: `${i}) ¿De qué grupo es este cantante?`, respuesta: "boys", msg: "¡Bien visto!", pista: "Grupo de chicos guapos", img: './resources/nick-carter.jpg' }],
         [++i, { pregunta: `${i}) Continúa la canción: 'Me muero por conocerte.… 🎶'`, respuesta: "saber", msg: "¡Bien!", pista: "Álex Ubago." }],
-        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "musical", msg: "¡Correcto!", pista: "Un rubito guapo…" }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "musical", msg: "¡Correcto!", pista: "Un rubito guapo…" , audio: './resources/high_school.mp3', timeInit: 1, addTime: 2, timeMax: 60 }],
         [++i, { pregunta: `${i}) ¿Quién canta 'Corazón partío'? 🎶`, respuesta: "sanz", msg: "¡Bien!", pista: "Alejandro..." }],
         [++i, { pregunta: `${i}) Continúa la canción: “Soy una taza… 🎶"`, respuesta: "tetera", msg: "¡Correcto!", pista: "Para poner té." }],
-        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "hina", msg: "¡Correcto!", pista: "Love…" }],
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "hina", msg: "¡Correcto!", pista: "Love…" , audio: './resources/love_hina.mp3', timeInit: 1, addTime: 2, timeMax: 60}],
         [++i, { pregunta: `${i}) ¿Que grupo es?`, respuesta: "pereza", msg: "¡Bien visto!", pista: "Estoy muy cansado...", img: './resources/pereza.jpg' }],
-        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "avril", msg: "¡Correcto!", pista: "Mad Cool…" }]
+        [++i, { pregunta: `${i}) ¿Qué suena?`, respuesta: "avril", msg: "¡Correcto!", pista: "Mad Cool…" , audio: './resources/avril_avigne.mp3', timeInit: 60, addTime: 2, timeMax: 60}]
       ]);
 
 
@@ -835,8 +864,27 @@
           const preguntaObj = prueba_1_preguntas.get(preguntaActualPrueba1);
           const respuestaUsuario = lastMessagePinchi.toLowerCase();
 
+          stopAudio();
+
           if (!respuestaUsuario.includes(preguntaObj.respuesta.toLowerCase())) {
-            addMessage(preguntaObj.pista, 'chimpy');
+
+            if (preguntaObj.audio) {
+
+              preguntaObj.timeInit = preguntaObj.timeInit + preguntaObj.addTime;
+
+              if (preguntaObj.timeInit >= preguntaObj.timeMax) {
+                addMessage(preguntaObj.pista, 'chimpy');
+                preguntaObj.timeInit = preguntaObj.timeMax;
+              } else {
+                addMessage(`Te doy ${preguntaObj.timeInit} segundos de tiempo`, 'chimpy');
+              }
+
+              addAudio(preguntaObj.audio, preguntaObj.timeInit);
+
+            } else {
+              addMessage(preguntaObj.pista, 'chimpy');
+            }
+
             return;
           } else {
             addMessage(preguntaObj.msg, 'chimpy');
@@ -878,7 +926,7 @@
           ]
           : [
             { msg: "Vayamos a por la siguiente!" },
-            { msg: obj.pregunta, link: obj.link, img: obj.img }
+            { msg: obj.pregunta, link: obj.link, img: obj.img, audio: obj.audio, timeInit: obj.timeInit }
           ];
 
         // Enviar mensajes con delay
@@ -893,6 +941,10 @@
             }
             if (mensaje.img) {
               addMessage(mensaje.msg, 'chimpy', null, mensaje.img);
+            }
+
+            if (mensaje.audio) {
+              addAudio(mensaje.audio, mensaje.timeInit);
             }
 
           }, index * 800);
@@ -921,7 +973,7 @@
         [++i_2, { pregunta: `${i_2}) ¿Cómo se llaman?`, respuesta: "benito", msg: "¡Esta estaba chupada!", pista: "Manos a la obra.", img: './resources/manolo.jpg' }],
         [++i_2, { pregunta: `${i_2}) 'Hasta el infinito y más allá!' ¿De qué película de Pixar es?`, respuesta: "toy", msg: "¡Bien!", pista: "Vaquero y guardián espacial." }],
         [++i_2, { pregunta: `${i_2}) ¿Cómo se llaman?`, respuesta: "oompa", msg: "¡Esta estaba chupada!", pista: "Fabrica de chocolate", img: './resources/Oompa_Loompa.webp' }],
-        
+
       ]);
 
 
