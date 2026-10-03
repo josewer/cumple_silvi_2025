@@ -1,7 +1,32 @@
 // Service Worker para permitir instalación como App en Android y funcionamiento offline
-const CACHE_NAME = 'msn-pinchi-v1';
+const CACHE_NAME = 'msn-pinchi-v2';
+const CORE_ASSETS = [
+  './',
+  './index.html',
+  './manifest.json',
+  './minigames.js',
+  './games/penguin.js',
+  './games/memory.js',
+  './games/runner.js',
+  './games/catcher.js',
+  './games/scratch.js',
+  './games/wheel.js',
+  './games/tictactoe.js',
+  './games/puzzle.js',
+  './games/simon.js',
+  './games/feedpig.js',
+  './games/brick.js',
+  './games/hangman.js',
+  './games/bubbles.js',
+  './games/quiz.js'
+];
 
 self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(CORE_ASSETS).catch(e => console.log('Precache note:', e));
+    })
+  );
   self.skipWaiting();
 });
 

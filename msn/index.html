@@ -494,6 +494,183 @@
       border-radius: 6px;
     }
 
+    /* Estilos Salón de Juegos MSN */
+    .games-hub-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      width: 100%;
+      margin: 8px 0;
+    }
+    .game-hub-card {
+      background: white;
+      border: 1.5px solid #c0d8f0;
+      border-radius: 10px;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+    .game-hub-card:active {
+      transform: scale(0.96);
+    }
+    .game-hub-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+    }
+    .game-hub-icon {
+      font-size: 30px;
+      margin-bottom: 4px;
+    }
+    .game-hub-info b {
+      font-size: 13px;
+      color: #004a9f;
+      display: block;
+    }
+    .game-hub-info span {
+      font-size: 11px;
+      color: #666;
+      line-height: 1.2;
+      display: block;
+      margin-top: 2px;
+    }
+    .msn-back-hub-btn {
+      margin-top: 10px;
+      background: #f0f4f8;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: #333;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .msn-toolbar-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      width: 35px;
+      height: 35px;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      user-select: none;
+    }
+    .msn-toolbar-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+
+    /* Estilos Tres en Raya */
+    .ttt-board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      width: 220px;
+      height: 220px;
+      margin: 8px auto;
+      background: #cce4f7;
+      padding: 6px;
+      border-radius: 10px;
+      border: 2px solid #0078d7;
+    }
+    .ttt-cell {
+      background: white;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    .ttt-cell:hover {
+      background: #f0f8ff;
+    }
+
+    /* Estilos Puzzle Deslizante */
+    .sliding-puzzle-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+      width: 255px;
+      height: 255px;
+      margin: 8px auto;
+      background: #333;
+      padding: 4px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .puzzle-tile {
+      width: 85px;
+      height: 85px;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+      box-sizing: border-box;
+      border: 1px solid rgba(255,255,255,0.4);
+      transition: transform 0.1s ease;
+    }
+    .puzzle-tile.empty-tile {
+      background: #222;
+      border: none;
+      cursor: default;
+    }
+
+    /* Estilos Simón Dice */
+    .simon-btn {
+      transition: filter 0.15s, transform 0.1s, box-shadow 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .simon-btn:active {
+      transform: scale(0.94);
+    }
+
+    /* Estilos Test de Pareja */
+    .msn-quiz-option-btn {
+      background: #ffffff;
+      border: 2px solid #0078d7;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #111;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .msn-quiz-option-btn:hover {
+      background: #eaf3fc;
+      border-color: #005a9e;
+      transform: translateX(4px);
+    }
+    .msn-quiz-option-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* Estilos Ahorcado Teclado */
+    #hmKeyboard button:hover:not(:disabled) {
+      background: #0078d7 !important;
+      color: white !important;
+    }
+    #hmKeyboard button:active:not(:disabled) {
+      transform: scale(0.92);
+    }
+
     @media (max-width: 768px) {
       .avatar-top,
       .avatar-bottom {
@@ -608,6 +785,7 @@
 
     <div class="controls">
       <img id="buzz" src="./resources/msn-icon-zumbido.png" height="35px" width="35px" title="Mandar zumbido" />
+      <div id="gamesHubBtn" class="msn-toolbar-btn" title="Salón de Juegos MSN" onclick="openGamesHub()">🎮</div>
       <img id="pig" src="./resources/msn-cerdito.ico" height="35px" width="35px" title="Baile cerdito" />
       <img id="angry" src="./resources/msn-angry.jpg" height="35px" width="35px" title="Guitarra" />
       <div class="dropdown">
@@ -1452,199 +1630,6 @@
 
 
 
-      // Control de Modal y Minijuegos
-      const gameModal = document.getElementById('gameModal');
-      const gameTitle = document.getElementById('gameTitle');
-      const gameContent = document.getElementById('gameContent');
-      const closeGameBtn = document.getElementById('closeGameBtn');
-
-      function closeGameModal() {
-        if (gameModal) gameModal.style.display = 'none';
-        if (window._gameTimer) clearInterval(window._gameTimer);
-        if (window._spawnTimer) clearInterval(window._spawnTimer);
-      }
-      if (closeGameBtn) {
-        closeGameBtn.onclick = closeGameModal;
-      }
-
-      function openPenguinGame() {
-        if (window._gameTimer) clearInterval(window._gameTimer);
-        if (window._spawnTimer) clearInterval(window._spawnTimer);
-
-        gameTitle.textContent = '🐧 MSN Games - Guerra de Pingüinos';
-        let score = 0;
-        const targetScore = 8;
-        let timeLeft = 25;
-
-        gameContent.innerHTML = `
-          <div style="font-weight:bold;font-size:15px;color:#111;">¡Toca a los pingüinos antes de que se escondan!</div>
-          <div style="display:flex;gap:20px;font-size:16px;font-weight:bold;margin:4px 0;">
-            <div style="color:#0078d7;">Puntos: <span id="pgScore">0</span>/${targetScore}</div>
-            <div style="color:#e81123;">Tiempo: <span id="pgTimer">${timeLeft}</span>s</div>
-          </div>
-          <div class="penguin-grid" id="penguinGrid">
-            <div class="penguin-hole" data-idx="0"><div class="target">🐧</div></div>
-            <div class="penguin-hole" data-idx="1"><div class="target">🐧</div></div>
-            <div class="penguin-hole" data-idx="2"><div class="target">🐧</div></div>
-            <div class="penguin-hole" data-idx="3"><div class="target">🐧</div></div>
-            <div class="penguin-hole" data-idx="4"><div class="target">🐧</div></div>
-            <div class="penguin-hole" data-idx="5"><div class="target">🐧</div></div>
-          </div>
-          <div id="pgStatus" style="font-size:13px;color:#555;">¡Toca rápido para acertarles con una bola de nieve! ❄️</div>
-        `;
-
-        gameModal.style.display = 'flex';
-
-        const holes = gameContent.querySelectorAll('.penguin-hole');
-        const scoreElem = document.getElementById('pgScore');
-        const timerElem = document.getElementById('pgTimer');
-        const statusElem = document.getElementById('pgStatus');
-
-        function popPenguin() {
-          holes.forEach(h => {
-            h.classList.remove('active', 'hit');
-          });
-          const nextHole = Math.floor(Math.random() * holes.length);
-          holes[nextHole].classList.add('active');
-        }
-
-        holes.forEach((hole) => {
-          const hitHandler = (e) => {
-            e.preventDefault();
-            if (hole.classList.contains('active') && !hole.classList.contains('hit')) {
-              hole.classList.add('hit');
-              score++;
-              scoreElem.textContent = score;
-              if (navigator.vibrate) {
-                try { navigator.vibrate(60); } catch(err){}
-              }
-              statusElem.textContent = '¡Pum! Bola de nieve directa ❄️🎯';
-
-              if (score >= targetScore) {
-                clearInterval(window._gameTimer);
-                clearInterval(window._spawnTimer);
-                statusElem.innerHTML = '<b style="color:#2e8b57;font-size:16px;">¡VICTORIA! 🎉 ¡Has ganado la Guerra de Pingüinos!</b>';
-                if (navigator.vibrate) {
-                  try { navigator.vibrate([100, 50, 100, 50, 200]); } catch(err){}
-                }
-                setTimeout(() => {
-                  closeGameModal();
-                  lastMessagePinchi = "gane";
-                  prueba_3();
-                }, 1300);
-              }
-            }
-          };
-          hole.addEventListener('pointerdown', hitHandler);
-        });
-
-        popPenguin();
-        window._spawnTimer = setInterval(popPenguin, 1000);
-
-        window._gameTimer = setInterval(() => {
-          timeLeft--;
-          if (timerElem) timerElem.textContent = timeLeft;
-          if (timeLeft <= 0) {
-            clearInterval(window._gameTimer);
-            clearInterval(window._spawnTimer);
-            holes.forEach(h => h.classList.remove('active'));
-            statusElem.innerHTML = '<span style="color:#e81123;">¡Se acabó el tiempo! <button class="msn-game-launch-btn" style="padding:6px 12px;font-size:12px;margin-top:6px;" onclick="openPenguinGame()">Reintentar 🔄</button></span>';
-          }
-        }, 1000);
-      }
-
-      function openMemoryGame() {
-        if (window._gameTimer) clearInterval(window._gameTimer);
-        if (window._spawnTimer) clearInterval(window._spawnTimer);
-
-        gameTitle.textContent = '🧠 MSN Games - Reto de Memoria: Nostalgia';
-
-        const items = [
-          { id: 1, img: './resources/simba.webp', name: 'Simba' },
-          { id: 2, img: './resources/manolo.jpg', name: 'Manolo y Benito' },
-          { id: 3, img: './resources/serrano.jpeg', name: 'Los Serrano' },
-          { id: 4, img: './resources/Oompa_Loompa.webp', name: 'Oompa Loompa' },
-          { id: 5, img: './resources/chispitas.webp', name: 'Chispitas' },
-          { id: 6, img: './resources/chimpi_1.png', name: 'Chimpi' }
-        ];
-
-        const deck = [...items, ...items].sort(() => Math.random() - 0.5);
-
-        gameContent.innerHTML = `
-          <div style="font-weight:bold;font-size:15px;color:#111;">Encuentra las 6 parejas de momentazos</div>
-          <div style="font-size:14px;color:#0078d7;font-weight:bold;">Parejas encontradas: <span id="memMatches">0</span>/6</div>
-          <div class="memory-grid" id="memoryGrid"></div>
-          <div id="memStatus" style="font-size:13px;color:#555;">Toca dos cartas para descubrir si coinciden 💖</div>
-        `;
-
-        gameModal.style.display = 'flex';
-
-        const grid = document.getElementById('memoryGrid');
-        const matchesElem = document.getElementById('memMatches');
-        const statusElem = document.getElementById('memStatus');
-        let flippedCards = [];
-        let matchedCount = 0;
-        let lockBoard = false;
-
-        deck.forEach((cardData, idx) => {
-          const card = document.createElement('div');
-          card.className = 'memory-card';
-          card.dataset.id = cardData.id;
-          card.dataset.idx = idx;
-          card.innerHTML = '❓';
-
-          card.addEventListener('click', () => {
-            if (lockBoard) return;
-            if (card.classList.contains('revealed') || card.classList.contains('matched')) return;
-
-            card.classList.add('revealed');
-            card.innerHTML = `<img src="${cardData.img}" alt="${cardData.name}">`;
-            flippedCards.push(card);
-
-            if (flippedCards.length === 2) {
-              lockBoard = true;
-              const [card1, card2] = flippedCards;
-
-              if (card1.dataset.id === card2.dataset.id) {
-                card1.classList.add('matched');
-                card2.classList.add('matched');
-                matchedCount++;
-                matchesElem.textContent = matchedCount;
-                if (navigator.vibrate) {
-                  try { navigator.vibrate(60); } catch(err){}
-                }
-                statusElem.textContent = `¡Pareja encontrada! 🎉 (${cardData.name})`;
-                flippedCards = [];
-                lockBoard = false;
-
-                if (matchedCount === 6) {
-                  statusElem.innerHTML = '<b style="color:#2e8b57;font-size:16px;">¡RETO FINAL SUPERADO! 🎉💖</b>';
-                  if (navigator.vibrate) {
-                    try { navigator.vibrate([100, 50, 100, 50, 250]); } catch(err){}
-                  }
-                  setTimeout(() => {
-                    closeGameModal();
-                    lastMessagePinchi = "gane";
-                    prueba_4();
-                  }, 1400);
-                }
-              } else {
-                statusElem.textContent = 'Casi... ¡sigue buscando! 🧐';
-                setTimeout(() => {
-                  card1.classList.remove('revealed');
-                  card2.classList.remove('revealed');
-                  card1.innerHTML = '❓';
-                  card2.innerHTML = '❓';
-                  flippedCards = [];
-                  lockBoard = false;
-                }, 900);
-              }
-            }
-          });
-
-          grid.appendChild(card);
-        });
-      }
 
       let preguntaActualPrueba3 = 0;
 
@@ -1781,6 +1766,22 @@
 
 
     </script>
+    <!-- Orquestador MSN Games y módulos de minijuegos -->
+    <script src="./minigames.js"></script>
+    <script src="./games/penguin.js"></script>
+    <script src="./games/memory.js"></script>
+    <script src="./games/runner.js"></script>
+    <script src="./games/catcher.js"></script>
+    <script src="./games/scratch.js"></script>
+    <script src="./games/wheel.js"></script>
+    <script src="./games/tictactoe.js"></script>
+    <script src="./games/puzzle.js"></script>
+    <script src="./games/simon.js"></script>
+    <script src="./games/feedpig.js"></script>
+    <script src="./games/brick.js"></script>
+    <script src="./games/hangman.js"></script>
+    <script src="./games/bubbles.js"></script>
+    <script src="./games/quiz.js"></script>
 </body>
 
 </html>
