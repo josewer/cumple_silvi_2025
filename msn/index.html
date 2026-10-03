@@ -3,9 +3,15 @@
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MSN Messenger - Pinchi & Chimpi (verde)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>MSN Messenger - Pinchi & Chimpi</title>
+  <meta name="theme-color" content="#0078d7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" href="./resources/msn_logo.png">
+  <link rel="apple-touch-icon" href="./resources/msn_logo.png">
   <style>
     :root {
       --accent: #3cb371;
@@ -290,9 +296,278 @@
       word-wrap: break-word;
     }
 
-    @media (max-width: 600px) {
+    /* Header móvil y avatares adaptados */
+    .mobile-header-bar {
+      display: none;
+    }
+    .mobile-avatar-pinchi {
+      display: none;
+    }
+
+    .msn-overlay-video {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(85vw, 420px);
+      height: auto;
+      max-height: 75vh;
+      object-fit: cover;
+      z-index: 9999;
+      pointer-events: none;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: #444;
+      font-style: italic;
+      background: rgba(255, 255, 255, 0.85);
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      animation: pulseTyping 1.2s infinite ease-in-out;
+    }
+    @keyframes pulseTyping {
+      0%, 100% { opacity: 0.85; }
+      50% { opacity: 1; }
+    }
+
+    .msn-game-launch-btn {
+      margin-top: 8px;
+      background: linear-gradient(180deg, #ff9900, #e67300);
+      color: white;
+      border: 2px solid #b35900;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.25);
+      transition: transform 0.15s, background 0.15s;
+    }
+    .msn-game-launch-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* Modal Minijuegos MSN */
+    .game-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      box-sizing: border-box;
+      backdrop-filter: blur(4px);
+    }
+    .game-window {
+      background: #f0f4f8;
+      border: 2px solid var(--accent-dark);
+      border-radius: 10px;
+      width: 100%;
+      max-width: 480px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      animation: popIn 0.25s ease-out;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.85); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .game-title-bar {
+      background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+      color: white;
+      padding: 10px 14px;
+      font-weight: bold;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .game-close-btn {
+      background: #e81123;
+      border: none;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .game-content {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      max-height: 80vh;
+      overflow-y: auto;
+      text-align: center;
+    }
+
+    /* Estilos Guerra de Pingüinos */
+    .penguin-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 360px;
+      margin: 10px 0;
+    }
+    .penguin-hole {
+      background: linear-gradient(180deg, #b0d8f5, #6aa9d8);
+      border: 3px solid #3d7cb0;
+      border-radius: 12px;
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .penguin-hole .target {
+      font-size: 42px;
+      transition: transform 0.15s ease-out;
+      transform: translateY(70px);
+    }
+    .penguin-hole.active .target {
+      transform: translateY(0);
+    }
+    .penguin-hole.hit {
+      background: #ffe066 !important;
+    }
+
+    /* Estilos Memoria */
+    .memory-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      width: 100%;
+      max-width: 360px;
+      margin: 10px 0;
+    }
+    .memory-card {
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, #0078d7, #004a9f);
+      border: 2px solid #ffffff;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 26px;
+      color: white;
+      user-select: none;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      transition: transform 0.2s, background 0.2s;
+    }
+    .memory-card.revealed,
+    .memory-card.matched {
+      background: white;
+      border-color: #3cb371;
+    }
+    .memory-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    @media (max-width: 768px) {
+      .avatar-top,
+      .avatar-bottom {
+        display: none !important;
+      }
+      .mobile-header-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.6);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(4px);
+      }
+      .mobile-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 6px;
+        border: 2px solid var(--accent);
+        background-size: cover;
+        background-position: center;
+        background-color: #ddd;
+        flex-shrink: 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+      }
+      .mobile-contact-info {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .mobile-contact-name {
+        font-weight: bold;
+        font-size: 14px;
+        color: #111;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .status-badge {
+        font-size: 11px;
+        color: var(--accent-dark);
+        font-weight: normal;
+      }
+      .mobile-contact-status {
+        font-size: 12px;
+        color: #555;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
       .chat-box {
-        padding-right: 100px;
+        padding: 10px 12px 10px 12px !important;
+      }
+      .message-container {
+        max-width: 90% !important;
+      }
+      .mobile-avatar-pinchi {
+        display: block;
+        width: 38px;
+        height: 38px;
+        border-radius: 6px;
+        border: 2px solid var(--accent);
+        background-size: cover;
+        background-position: center;
+        background-color: #ddd;
+        flex-shrink: 0;
+      }
+      .controls {
+        gap: 10px;
+        padding: 8px 12px;
+      }
+      .controls img {
+        height: 34px;
+        width: 34px;
       }
     }
   </style>
@@ -313,6 +588,15 @@
       </label>
     </div>
 
+    <!-- Barra de contacto en móvil -->
+    <div class="mobile-header-bar">
+      <div class="mobile-avatar mobile-avatar-chimpi" style="background-image: url('./resources/chimpi_1.png');"></div>
+      <div class="mobile-contact-info">
+        <div class="mobile-contact-name">Chimpi 🐧 <span class="status-badge">(En línea)</span></div>
+        <div class="mobile-contact-status">🎵 Escuchando: Avril Lavigne - Complicated</div>
+      </div>
+    </div>
+
     <div id="confetti-container"
       style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:9998;">
     </div>
@@ -323,11 +607,11 @@
     </div>
 
     <div class="controls">
-      <img id="buzz" src="./resources/msn-icon-zumbido.png" height="35px" width="35px" />
-      <img id="pig" src="./resources/msn-cerdito.ico" height="35px" width="35px" />
-      <img id="angry" src="./resources/msn-angry.jpg" height="35px" width="35px" />
+      <img id="buzz" src="./resources/msn-icon-zumbido.png" height="35px" width="35px" title="Mandar zumbido" />
+      <img id="pig" src="./resources/msn-cerdito.ico" height="35px" width="35px" title="Baile cerdito" />
+      <img id="angry" src="./resources/msn-angry.jpg" height="35px" width="35px" title="Guitarra" />
       <div class="dropdown">
-        <img class="dropbtn" src="./resources/msn-ajustes.png" height="35px" width="35px" />
+        <img class="dropbtn" src="./resources/msn-ajustes.png" height="35px" width="35px" title="Ajustes de texto" />
         <div class="dropdown-content">
           <label>Fuente:
             <select id="fontSelect">
@@ -348,13 +632,32 @@
       </div>
     </div>
 
+    <!-- Indicador Chimpi está escribiendo -->
+    <div id="typingIndicator" class="typing-indicator" style="display:none;">
+      <span>✏️</span> <span><b>Chimpi</b> está escribiendo un mensaje...</span>
+    </div>
+
     <!-- Input de mensaje siempre abajo -->
     <div class="input-area">
+      <div class="mobile-avatar-pinchi" style="background-image: url('./resources/pinchi_1.png');"></div>
       <div id="input" contenteditable="true" class="empty" data-placeholder="Escribe un mensaje..."></div>
       <button id="send">Enviar</button>
     </div>
 
-    <audio id="buzzSound" src="./resources/msn-zumbido.mp3" preload="auto"></audio>
+  </div>
+
+  <!-- Modal Minijuegos MSN -->
+  <div id="gameModal" class="game-modal" style="display:none;">
+    <div class="game-window">
+      <div class="game-title-bar">
+        <span id="gameTitle">🎮 MSN Games</span>
+        <button id="closeGameBtn" class="game-close-btn" type="button">&times;</button>
+      </div>
+      <div id="gameContent" class="game-content"></div>
+    </div>
+  </div>
+
+  <audio id="buzzSound" src="./resources/msn-zumbido.mp3" preload="auto"></audio>
 
     <script>
       const soundNotification = document.getElementById('soundNotification');
@@ -455,9 +758,50 @@
         "Dejate ya los zumbidos!!"
       ];
 
+      // Registro de Service Worker para PWA en Android
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(err => {
+            console.log('SW note:', err);
+          });
+        });
+      }
+
+      // Desbloquear audio en el primer toque (imprescindible en móvil)
+      document.body.addEventListener('pointerdown', () => {
+        if (buzzSound) buzzSound.load();
+        if (soundNotification) soundNotification.load();
+      }, { once: true });
+
+      const typingIndicator = document.getElementById('typingIndicator');
+      function showTyping() {
+        if (typingIndicator) typingIndicator.style.display = 'flex';
+        chat.scrollTop = chat.scrollHeight;
+      }
+      function hideTyping() {
+        if (typingIndicator) typingIndicator.style.display = 'none';
+      }
+
+      function parseEmoticons(str) {
+        if (!str || typeof str !== 'string') return str || '';
+        return str
+          .replace(/\(L\)/gi, '💖')
+          .replace(/\(H\)/gi, '😎')
+          .replace(/\(K\)/gi, '💋')
+          .replace(/\(P\)/gi, '🐧')
+          .replace(/:-?\)/g, '😊')
+          .replace(/:-?D/g, '😀')
+          .replace(/;-?\)/g, '😉')
+          .replace(/:-?P/gi, '😋')
+          .replace(/:-?\(/g, '😢');
+      }
+
       let nivelesHecho = [];
 
-      function addMessage(text, sender, link, img) {
+      function addMessage(text, sender, link, img, action) {
+        if (sender === 'chimpy') {
+          hideTyping();
+        }
 
         const container = document.createElement('div');
         container.className = 'message-container ' + sender;
@@ -474,33 +818,77 @@
         msg.style.fontSize = fontSize.value + 'px';
         msg.style.fontWeight = boldToggle.checked ? 'bold' : 'normal';
 
+        if (action === 'pinguinos') {
+          const introSpan = document.createElement('span');
+          introSpan.textContent = parseEmoticons(text) || 'Guerra de Pingüinos';
+          msg.appendChild(introSpan);
 
-        if (link) {
+          const btn = document.createElement('button');
+          btn.className = 'msn-game-launch-btn';
+          btn.type = 'button';
+          btn.innerHTML = '🎮 ¡JUGAR: GUERRA DE PINGÜINOS! 🐧';
+          btn.onclick = () => openPenguinGame();
+          msg.appendChild(document.createElement('br'));
+          msg.appendChild(btn);
+
+          if (link) {
+            const fallbackLink = document.createElement('a');
+            fallbackLink.href = link;
+            fallbackLink.target = '_blank';
+            fallbackLink.style.display = 'block';
+            fallbackLink.style.fontSize = '11px';
+            fallbackLink.style.marginTop = '6px';
+            fallbackLink.style.color = '#777';
+            fallbackLink.textContent = '(o descargar versión PC .exe)';
+            msg.appendChild(fallbackLink);
+          }
+        } else if (action === 'memoria') {
+          const introSpan = document.createElement('span');
+          introSpan.textContent = parseEmoticons(text) || 'Tus peores sueños';
+          msg.appendChild(introSpan);
+
+          const btn = document.createElement('button');
+          btn.className = 'msn-game-launch-btn';
+          btn.type = 'button';
+          btn.innerHTML = '🎮 ¡JUGAR: RETO DE MEMORIA! 🧠💖';
+          btn.onclick = () => openMemoryGame();
+          msg.appendChild(document.createElement('br'));
+          msg.appendChild(btn);
+
+          if (link) {
+            const fallbackLink = document.createElement('a');
+            fallbackLink.href = link;
+            fallbackLink.target = '_blank';
+            fallbackLink.style.display = 'block';
+            fallbackLink.style.fontSize = '11px';
+            fallbackLink.style.marginTop = '6px';
+            fallbackLink.style.color = '#777';
+            fallbackLink.textContent = '(o descargar versión PC .exe)';
+            msg.appendChild(fallbackLink);
+          }
+        } else if (link) {
           const a = document.createElement('a');
           a.href = link;
           a.target = '_blank';
-          a.textContent = text;
+          a.textContent = parseEmoticons(text);
           msg.appendChild(a);
         } else if (img) {
           const image = document.createElement('img');
           image.src = img;
-          image.alt = text || ''; // texto alternativo opcional
-          image.style.maxWidth = "200px"; // opcional, para que no se desborde
-          image.style.maxHeight = "200px"; // opcional, para que no se desborde
-
+          image.alt = text || '';
+          image.style.maxWidth = "200px";
+          image.style.maxHeight = "200px";
           image.onload = () => {
             chat.scrollTop = chat.scrollHeight;
           };
-
           msg.appendChild(image);
         } else {
-          msg.textContent = text;
+          msg.textContent = parseEmoticons(text);
         }
-
 
         if (sender === 'chimpy') {
           soundNotification.currentTime = 0;
-          soundNotification.play();
+          soundNotification.play().catch(e => console.log(e));
           msg.style.fontFamily = 'Comic Sans MS';
           msg.style.fontStyle = 'italic';
           msg.style.fontWeight = 'bold';
@@ -508,8 +896,8 @@
         } else {
           lastMessagePinchi = text
             .toLowerCase()
-            .normalize("NFD")        // separa letras y acentos
-            .replace(/[\u0300-\u036f]/g, ""); // elimina los acentos
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
         }
 
         if (lastSender !== sender) {
@@ -517,7 +905,6 @@
         }
 
         lastSender = sender;
-
         container.appendChild(msg);
         chat.appendChild(container);
         chat.scrollTop = chat.scrollHeight;
@@ -529,23 +916,16 @@
         const video = document.createElement('video');
         video.src = src;
         video.autoplay = true;
-        video.style.position = 'fixed';
-        video.style.top = '44%';
-        video.style.left = '50%';
-        video.style.width = '40%';
-        video.style.height = '75%';
-        video.style.transform = 'translate(-50%, -50%)';
-        video.style.objectFit = 'cover';
-        video.style.zIndex = 9999;
-        video.style.pointerEvents = 'none';
-        video.style.borderRadius = '12px';
+        video.playsInline = true;
+        video.className = 'msn-overlay-video';
         document.body.appendChild(video);
         setTimeout(() => {
-          document.body.removeChild(video)
+          if (video.parentNode) {
+            document.body.removeChild(video);
+          }
           isPlayPig = false;
         }, time * 1000);
       }
-
 
       function addAudio(src, time) {
         if (isPlayAudio) return;
@@ -562,14 +942,15 @@
         }, time * 1000);
       }
 
-
       function stopAudio() {
         if (!currentAudio) return;
 
         clearTimeout(currentAudio._timeout);
         currentAudio.pause();
         currentAudio.currentTime = 0;
-        document.body.removeChild(currentAudio);
+        if (currentAudio.parentNode) {
+          document.body.removeChild(currentAudio);
+        }
 
         currentAudio = null;
         isPlayAudio = false;
@@ -581,7 +962,10 @@
         addMessage(text, 'pinchi');
         input.innerText = '';
         input.classList.add('empty');
-        respuestaChimpi();
+        showTyping();
+        setTimeout(() => {
+          respuestaChimpi();
+        }, 500);
       }
 
       fontSelect.value = 'Comic Sans MS';
@@ -617,8 +1001,11 @@
       });
 
       function zumbido() {
+        if (navigator.vibrate) {
+          try { navigator.vibrate([100, 50, 100, 50, 200, 50, 300]); } catch(e){}
+        }
         buzzSound.currentTime = 0;
-        buzzSound.play();
+        buzzSound.play().catch(e => console.log(e));
 
         const container = document.createElement('div');
         container.className = 'message-container aviso';
@@ -640,10 +1027,12 @@
           }
         }, 40);
 
-
         setTimeout(() => {
-          enviarMensaje(mensajesZumbidos);
-        }, 2000);
+          showTyping();
+          setTimeout(() => {
+            enviarMensaje(mensajesZumbidos);
+          }, 800);
+        }, 1200);
       }
 
       function pigDance() {
@@ -705,6 +1094,9 @@
       }
 
       function lanzarConfetiVariasVeces() {
+        if (navigator.vibrate) {
+          try { navigator.vibrate([100, 60, 150]); } catch(e){}
+        }
         for (let i = 0; i < 15; i++) {
           setTimeout(() => {
             lanzarConfeti();
@@ -773,13 +1165,16 @@
           'Escribe el número de la prueba por la que quieres empezar... te dejo elegir 🙃',
         ];
 
-
         const mensajes = numResponses == 1 ? mensajes_init_1 : mensajes_init_2;
 
         mensajes.forEach((mensaje, index) => {
           setTimeout(() => {
+            showTyping();
+          }, index * 1300);
+
+          setTimeout(() => {
             addMessage(mensaje, 'chimpy');
-          }, index * 1200); // 1200ms de retraso entre cada mensaje
+          }, index * 1300 + 650);
         });
       }
 
@@ -1057,15 +1452,207 @@
 
 
 
+      // Control de Modal y Minijuegos
+      const gameModal = document.getElementById('gameModal');
+      const gameTitle = document.getElementById('gameTitle');
+      const gameContent = document.getElementById('gameContent');
+      const closeGameBtn = document.getElementById('closeGameBtn');
+
+      function closeGameModal() {
+        if (gameModal) gameModal.style.display = 'none';
+        if (window._gameTimer) clearInterval(window._gameTimer);
+        if (window._spawnTimer) clearInterval(window._spawnTimer);
+      }
+      if (closeGameBtn) {
+        closeGameBtn.onclick = closeGameModal;
+      }
+
+      function openPenguinGame() {
+        if (window._gameTimer) clearInterval(window._gameTimer);
+        if (window._spawnTimer) clearInterval(window._spawnTimer);
+
+        gameTitle.textContent = '🐧 MSN Games - Guerra de Pingüinos';
+        let score = 0;
+        const targetScore = 8;
+        let timeLeft = 25;
+
+        gameContent.innerHTML = `
+          <div style="font-weight:bold;font-size:15px;color:#111;">¡Toca a los pingüinos antes de que se escondan!</div>
+          <div style="display:flex;gap:20px;font-size:16px;font-weight:bold;margin:4px 0;">
+            <div style="color:#0078d7;">Puntos: <span id="pgScore">0</span>/${targetScore}</div>
+            <div style="color:#e81123;">Tiempo: <span id="pgTimer">${timeLeft}</span>s</div>
+          </div>
+          <div class="penguin-grid" id="penguinGrid">
+            <div class="penguin-hole" data-idx="0"><div class="target">🐧</div></div>
+            <div class="penguin-hole" data-idx="1"><div class="target">🐧</div></div>
+            <div class="penguin-hole" data-idx="2"><div class="target">🐧</div></div>
+            <div class="penguin-hole" data-idx="3"><div class="target">🐧</div></div>
+            <div class="penguin-hole" data-idx="4"><div class="target">🐧</div></div>
+            <div class="penguin-hole" data-idx="5"><div class="target">🐧</div></div>
+          </div>
+          <div id="pgStatus" style="font-size:13px;color:#555;">¡Toca rápido para acertarles con una bola de nieve! ❄️</div>
+        `;
+
+        gameModal.style.display = 'flex';
+
+        const holes = gameContent.querySelectorAll('.penguin-hole');
+        const scoreElem = document.getElementById('pgScore');
+        const timerElem = document.getElementById('pgTimer');
+        const statusElem = document.getElementById('pgStatus');
+
+        function popPenguin() {
+          holes.forEach(h => {
+            h.classList.remove('active', 'hit');
+          });
+          const nextHole = Math.floor(Math.random() * holes.length);
+          holes[nextHole].classList.add('active');
+        }
+
+        holes.forEach((hole) => {
+          const hitHandler = (e) => {
+            e.preventDefault();
+            if (hole.classList.contains('active') && !hole.classList.contains('hit')) {
+              hole.classList.add('hit');
+              score++;
+              scoreElem.textContent = score;
+              if (navigator.vibrate) {
+                try { navigator.vibrate(60); } catch(err){}
+              }
+              statusElem.textContent = '¡Pum! Bola de nieve directa ❄️🎯';
+
+              if (score >= targetScore) {
+                clearInterval(window._gameTimer);
+                clearInterval(window._spawnTimer);
+                statusElem.innerHTML = '<b style="color:#2e8b57;font-size:16px;">¡VICTORIA! 🎉 ¡Has ganado la Guerra de Pingüinos!</b>';
+                if (navigator.vibrate) {
+                  try { navigator.vibrate([100, 50, 100, 50, 200]); } catch(err){}
+                }
+                setTimeout(() => {
+                  closeGameModal();
+                  lastMessagePinchi = "gane";
+                  prueba_3();
+                }, 1300);
+              }
+            }
+          };
+          hole.addEventListener('pointerdown', hitHandler);
+        });
+
+        popPenguin();
+        window._spawnTimer = setInterval(popPenguin, 1000);
+
+        window._gameTimer = setInterval(() => {
+          timeLeft--;
+          if (timerElem) timerElem.textContent = timeLeft;
+          if (timeLeft <= 0) {
+            clearInterval(window._gameTimer);
+            clearInterval(window._spawnTimer);
+            holes.forEach(h => h.classList.remove('active'));
+            statusElem.innerHTML = '<span style="color:#e81123;">¡Se acabó el tiempo! <button class="msn-game-launch-btn" style="padding:6px 12px;font-size:12px;margin-top:6px;" onclick="openPenguinGame()">Reintentar 🔄</button></span>';
+          }
+        }, 1000);
+      }
+
+      function openMemoryGame() {
+        if (window._gameTimer) clearInterval(window._gameTimer);
+        if (window._spawnTimer) clearInterval(window._spawnTimer);
+
+        gameTitle.textContent = '🧠 MSN Games - Reto de Memoria: Nostalgia';
+
+        const items = [
+          { id: 1, img: './resources/simba.webp', name: 'Simba' },
+          { id: 2, img: './resources/manolo.jpg', name: 'Manolo y Benito' },
+          { id: 3, img: './resources/serrano.jpeg', name: 'Los Serrano' },
+          { id: 4, img: './resources/Oompa_Loompa.webp', name: 'Oompa Loompa' },
+          { id: 5, img: './resources/chispitas.webp', name: 'Chispitas' },
+          { id: 6, img: './resources/chimpi_1.png', name: 'Chimpi' }
+        ];
+
+        const deck = [...items, ...items].sort(() => Math.random() - 0.5);
+
+        gameContent.innerHTML = `
+          <div style="font-weight:bold;font-size:15px;color:#111;">Encuentra las 6 parejas de momentazos</div>
+          <div style="font-size:14px;color:#0078d7;font-weight:bold;">Parejas encontradas: <span id="memMatches">0</span>/6</div>
+          <div class="memory-grid" id="memoryGrid"></div>
+          <div id="memStatus" style="font-size:13px;color:#555;">Toca dos cartas para descubrir si coinciden 💖</div>
+        `;
+
+        gameModal.style.display = 'flex';
+
+        const grid = document.getElementById('memoryGrid');
+        const matchesElem = document.getElementById('memMatches');
+        const statusElem = document.getElementById('memStatus');
+        let flippedCards = [];
+        let matchedCount = 0;
+        let lockBoard = false;
+
+        deck.forEach((cardData, idx) => {
+          const card = document.createElement('div');
+          card.className = 'memory-card';
+          card.dataset.id = cardData.id;
+          card.dataset.idx = idx;
+          card.innerHTML = '❓';
+
+          card.addEventListener('click', () => {
+            if (lockBoard) return;
+            if (card.classList.contains('revealed') || card.classList.contains('matched')) return;
+
+            card.classList.add('revealed');
+            card.innerHTML = `<img src="${cardData.img}" alt="${cardData.name}">`;
+            flippedCards.push(card);
+
+            if (flippedCards.length === 2) {
+              lockBoard = true;
+              const [card1, card2] = flippedCards;
+
+              if (card1.dataset.id === card2.dataset.id) {
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                matchedCount++;
+                matchesElem.textContent = matchedCount;
+                if (navigator.vibrate) {
+                  try { navigator.vibrate(60); } catch(err){}
+                }
+                statusElem.textContent = `¡Pareja encontrada! 🎉 (${cardData.name})`;
+                flippedCards = [];
+                lockBoard = false;
+
+                if (matchedCount === 6) {
+                  statusElem.innerHTML = '<b style="color:#2e8b57;font-size:16px;">¡RETO FINAL SUPERADO! 🎉💖</b>';
+                  if (navigator.vibrate) {
+                    try { navigator.vibrate([100, 50, 100, 50, 250]); } catch(err){}
+                  }
+                  setTimeout(() => {
+                    closeGameModal();
+                    lastMessagePinchi = "gane";
+                    prueba_4();
+                  }, 1400);
+                }
+              } else {
+                statusElem.textContent = 'Casi... ¡sigue buscando! 🧐';
+                setTimeout(() => {
+                  card1.classList.remove('revealed');
+                  card2.classList.remove('revealed');
+                  card1.innerHTML = '❓';
+                  card2.innerHTML = '❓';
+                  flippedCards = [];
+                  lockBoard = false;
+                }, 900);
+              }
+            }
+          });
+
+          grid.appendChild(card);
+        });
+      }
+
       let preguntaActualPrueba3 = 0;
 
       function prueba_3() {
-
-        // Si es la primera pregunta → mensajes de inicio
         const mensajes = [
           { msg: "Muy bien! Has elegido la batalla de pinguinos... estas acabada jujuju." },
-          { msg: "En esta prueba tendrás que ganarme a una batalla de vida o muerte... si por casualidad ganaras.. dime la palabra 'gane'" },
-          { msg: "Guerra de pinguinos", link: "./resources/ConquerAntarctica.exe" }
+          { msg: "En esta prueba tendrás que ganarme en un duelo táctil... ¡o dime la palabra 'gane' si lo logras!" },
+          { msg: "Guerra de pingüinos", action: "pinguinos", link: "./resources/ConquerAntarctica.exe" }
         ];
 
         const respuestaUsuario = lastMessagePinchi.toLowerCase();
@@ -1093,34 +1680,32 @@
 
         preguntaActualPrueba3++;
 
-        // Enviar mensajes con delay
         mensajes.forEach((mensaje, index) => {
           setTimeout(() => {
+            showTyping();
+          }, index * 1000);
 
-            if (mensaje.msg && !mensaje.link) {
+          setTimeout(() => {
+            if (mensaje.action) {
+              addMessage(mensaje.msg, 'chimpy', mensaje.link, null, mensaje.action);
+            } else if (mensaje.link) {
+              addMessage(mensaje.msg, 'chimpy', mensaje.link);
+            } else if (mensaje.img) {
+              addMessage(mensaje.msg, 'chimpy', null, mensaje.img);
+            } else if (mensaje.msg) {
               addMessage(mensaje.msg, 'chimpy');
             }
-            if (mensaje.link) {
-              addMessage(mensaje.msg, 'chimpy', mensaje.link);
-            }
-            if (mensaje.img) {
-              addMessage(mensaje.msg, 'chimpy', null, mensaje.img);
-            }
-
-          }, index * 800);
+          }, index * 1000 + 500);
         });
       }
-
 
       let preguntaActualPrueba4 = 0;
 
       function prueba_4() {
-
-        // Si es la primera pregunta → mensajes de inicio
         const mensajes = [
           { msg: "Jajajajaja pensabas que esto era todo?? Aun te queda el reto más dificil..." },
-          { msg: "Supera esta prueba... si por casualidad vuelves a ganar.. dime la palabra 'gane'" },
-          { msg: "Tus peores sueños", link: "./resources/CumplePinchi2025.exe" }
+          { msg: "Supera este reto de memoria con nuestros momentazos... o dime la palabra 'gane' si lo consigues." },
+          { msg: "Tus peores sueños", action: "memoria", link: "./resources/CumplePinchi2025.exe" }
         ];
 
         const respuestaUsuario = lastMessagePinchi.toLowerCase();
@@ -1129,11 +1714,10 @@
           if (respuestaUsuario.includes("gane")) {
             addMessage("¡Felicidades! 🎉 Has superado tus peores sueños y ahora puedes recibir tu premio... ¿Que hay más nostalgico que tu en la casa?", 'chimpy');
 
-
             for (let i = 0; i < 10; i++) {
               setTimeout(() => {
                 lanzarConfetiVariasVeces();
-              }, i * 2000); // intervalo entre cada confeti
+              }, i * 2000);
             }
 
             addVideo("./resources/madagascar.mp4", 20);
@@ -1149,45 +1733,49 @@
 
         preguntaActualPrueba4++;
 
-        // Enviar mensajes con delay
         mensajes.forEach((mensaje, index) => {
           setTimeout(() => {
+            showTyping();
+          }, index * 1000);
 
-            if (mensaje.msg && !mensaje.link) {
+          setTimeout(() => {
+            if (mensaje.action) {
+              addMessage(mensaje.msg, 'chimpy', mensaje.link, null, mensaje.action);
+            } else if (mensaje.link) {
+              addMessage(mensaje.msg, 'chimpy', mensaje.link);
+            } else if (mensaje.img) {
+              addMessage(mensaje.msg, 'chimpy', null, mensaje.img);
+            } else if (mensaje.msg) {
               addMessage(mensaje.msg, 'chimpy');
             }
-            if (mensaje.link) {
-              addMessage(mensaje.msg, 'chimpy', mensaje.link);
-            }
-            if (mensaje.img) {
-              addMessage(mensaje.msg, 'chimpy', null, mensaje.img);
-            }
-
-          }, index * 800);
+          }, index * 1000 + 500);
         });
       }
 
       function changeAvatar() {
-        // Seleccionamos el elemento
         const avatarTop = document.querySelector('.avatar-top');
         const avatarBottom = document.querySelector('.avatar-bottom');
+        const mobileAvatarChimpi = document.querySelector('.mobile-avatar-chimpi');
+        const mobileAvatarPinchi = document.querySelector('.mobile-avatar-pinchi');
+
+        let chimpiImg = './resources/chimpi_1.png';
+        let pinchiImg = './resources/pinchi_1.png';
 
         if (pruebasSuperadas == 1) {
-          avatarTop.style.backgroundImage = "url('./resources/chimpi_2.jpg')";
-          avatarBottom.style.backgroundImage = "url('./resources/pinchi_2.jpg')";
+          chimpiImg = './resources/chimpi_2.jpg';
+          pinchiImg = './resources/pinchi_2.jpg';
+        } else if (pruebasSuperadas == 2) {
+          chimpiImg = './resources/chimpi_3.png';
+          pinchiImg = './resources/pinchi_3.jpg';
+        } else if (pruebasSuperadas >= 3) {
+          chimpiImg = './resources/chimpi.jpg';
+          pinchiImg = './resources/pinchi.jpg';
         }
 
-        if (pruebasSuperadas == 2) {
-          avatarTop.style.backgroundImage = "url('./resources/chimpi_3.png')";
-          avatarBottom.style.backgroundImage = "url('./resources/pinchi_3.jpg')";
-
-        }
-
-        if (pruebasSuperadas == 3) {
-          avatarTop.style.backgroundImage = "url('./resources/chimpi.jpg')";
-          avatarBottom.style.backgroundImage = "url('./resources/pinchi.jpg')";
-
-        }
+        if (avatarTop) avatarTop.style.backgroundImage = `url('${chimpiImg}')`;
+        if (avatarBottom) avatarBottom.style.backgroundImage = `url('${pinchiImg}')`;
+        if (mobileAvatarChimpi) mobileAvatarChimpi.style.backgroundImage = `url('${chimpiImg}')`;
+        if (mobileAvatarPinchi) mobileAvatarPinchi.style.backgroundImage = `url('${pinchiImg}')`;
       }
 
 
