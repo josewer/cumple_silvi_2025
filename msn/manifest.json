@@ -2,8 +2,11 @@
   "name": "MSN Messenger - Pinchi & Chimpi",
   "short_name": "MSN Messenger",
   "description": "Edición especial nostálgica MSN Messenger para Pinchi",
+  "id": "./index.html",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#cfe3f2",
   "theme_color": "#0078d7",
@@ -13,6 +16,11 @@
       "sizes": "192x192 512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "./resources/msn_logo.png",
+      "sizes": "180x180",
+      "type": "image/png"
     }
   ]
 }

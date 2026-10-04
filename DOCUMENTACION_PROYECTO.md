@@ -98,23 +98,34 @@ Para evitar dependencias cruzadas y duplicidades:
 
 ---
 
-## 📱 6. Despliegue en GitHub Pages y Uso como App Móvil
+## 📱 6. Despliegue en GitHub Pages y Uso como App Móvil (PWA Offline)
 
 - **Repositorio Git Remoto:** `https://github.com/josewer/cumple_silvi_2025.git`
 - **Rama:** `main`
 - **URL pública en GitHub Pages:** `https://josewer.github.io/cumple_silvi_2025/msn/`
+- **Redirección Raíz:** `index.html` en la raíz redirige automáticamente a `./msn/`.
 - **Configuración de GitHub Pages:**
   - Repositorio -> *Settings* -> *Pages*.
   - Source: *Deploy from a branch*.
   - Branch: `main` / `root`.
+- **Instalación y Funcionamiento Offline en iPhone (iOS Safari):**
+  - **Ajustes implementados para iOS:**
+    - `apple-mobile-web-app-capable: yes` y `apple-mobile-web-app-title: MSN Messenger` para que Safari lo instale como aplicación standalone a pantalla completa en el springboard y no como un marcador web estándar.
+    - `apple-touch-icon` en resoluciones 180x180, 152x152 y 120x120.
+    - Manifiesto con `id`, `scope: "./"` y `display_override: ["standalone"]`.
+    - **Service Worker v5:**
+      - Precache integral y tolerante a fallos de todos los recursos (audios mp3 del concurso, vídeos mp4, avatares, fotos nostálgicas, minijuegos y biblioteca PeerJS).
+      - Manejo de peticiones de navegación (`mode: 'navigate'`) que devuelve `index.html` de la caché si la red falla o está sin conexión.
+      - Soporte para peticiones `Range` (HTTP 206 Partial Content) imprescindible para que Safari iOS reproduzca audios y vídeos en modo offline sin errores.
+  - **Cómo instalarlo en iPhone:**
+    1. Abrir `https://josewer.github.io/cumple_silvi_2025/msn/` en **Safari**.
+    2. Esperar 2-3 segundos a que el Service Worker descargue los recursos en caché.
+    3. Tocar el botón de compartir de Safari (cuadrado con flecha hacia arriba `⎋` en la barra inferior).
+    4. Seleccionar **"Añadir a la pantalla de inicio"** (Add to Home Screen).
+    5. Pulsar **Añadir**. Aparecerá el icono de MSN Messenger como una app nativa que se abre sin marcos ni barras y funciona completamente offline.
 - **Instalación en Android:**
   - Abrir el enlace en Google Chrome.
   - Tocar el menú de 3 puntos `⋮` y seleccionar **"Instalar aplicación"** o **"Añadir a la pantalla de inicio"**.
-- **Instalación en iPhone (iOS):**
-  - Abrir el enlace en Safari.
-  - Tocar el botón de compartir (cuadrado con flecha hacia arriba) y seleccionar **"Añadir a la pantalla de inicio"**.
-
----
 
 ## 💡 7. Consejos y Recordatorios para Futuras Sesiones
 
@@ -125,3 +136,18 @@ Para evitar dependencias cruzadas y duplicidades:
    - Registrarlo en `MSN_GAMES_CATALOG` en `minigames.js`.
    - Añadir la etiqueta `<script src="./games/<nombre>.js"></script>` en `index.html`.
    - Añadirlo a `CORE_ASSETS` en `sw.js` para caché offline.
+
+---
+
+## 📡 8. Modo Real en Vivo (P2P WebRTC - PeerJS)
+
+Implementado en `msn/live_chimpi.js` para permitir que Chimpi se conecte en directo con Pinchi desde otro móvil o PC:
+1. **Acceso de Chimpi:**
+   - URL: `https://josewer.github.io/cumple_silvi_2025/msn/?rol=chimpi`
+   - O pulsando el botón `🐷 Modo Chimpi en Vivo` en el menú de ajustes de la web.
+2. **Capacidades en tiempo real:**
+   - **Chat bidireccional:** Todo lo que Chimpi teclea y envía le llega a Pinchi al instante como mensaje de Chimpi.
+   - **Indicador "Escribiendo...":** Mientras Chimpi escribe, en el móvil de Pinchi aparece el lápiz de MSN en tiempo real.
+   - **Zumbido remoto real:** Al pulsar el botón de zumbido, se despacha un único paquete vía WebRTC con debounce de 1.5s y control de conexiones previas; la pantalla de Pinchi tiembla exactamente una vez, reproduce el sonido de zumbido y su teléfono vibra en su mano (sin mensajes duplicados ni respuestas del bot).
+   - **Vídeos remotos:** Al pulsar el cerdo bailarín o la guitarra, se le reproduce el vídeo en la pantalla de Pinchi.
+   - **Tres en Raya Multijugador Real:** El juego detecta la conexión en vivo y permite que Chimpi juegue como el cerdito 🐷 por turnos contra el pingüino 🐧 de Pinchi en directo, desactivando la IA.

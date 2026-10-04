@@ -9,9 +9,14 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MSN Messenger">
+  <meta name="application-name" content="MSN Messenger">
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" href="./resources/msn_logo.png">
   <link rel="apple-touch-icon" href="./resources/msn_logo.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="./resources/msn_logo.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="./resources/msn_logo.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="./resources/msn_logo.png">
   <style>
     :root {
       --accent: #3cb371;
@@ -769,7 +774,7 @@
     <div class="mobile-header-bar">
       <div class="mobile-avatar mobile-avatar-chimpi" style="background-image: url('./resources/chimpi_1.png');"></div>
       <div class="mobile-contact-info">
-        <div class="mobile-contact-name">Chimpi 🐧 <span class="status-badge">(En línea)</span></div>
+        <div class="mobile-contact-name">Chimpi 🐷 <span class="status-badge">(En línea)</span></div>
         <div class="mobile-contact-status">🎵 Escuchando: Avril Lavigne - Complicated</div>
       </div>
     </div>
@@ -806,6 +811,10 @@
             <input type="color" id="colorPicker" value="#000000">
           </label>
           <label><input type="checkbox" id="boldToggle"> Negrita</label>
+          <hr style="border:0;border-top:1px solid #ddd;margin:6px 0;">
+          <button id="toggleLiveModeBtn" type="button" style="background:#eaf4ff;border:1px solid #0078d7;border-radius:4px;padding:6px 8px;font-size:12px;font-weight:bold;cursor:pointer;width:100%;color:#004a9f;" onclick="location.href = location.search.includes('rol=chimpi') ? location.pathname : location.pathname + '?rol=chimpi'">
+            🐷 Modo Chimpi en Vivo
+          </button>
         </div>
       </div>
     </div>
@@ -936,13 +945,31 @@
         "Dejate ya los zumbidos!!"
       ];
 
-      // Registro de Service Worker para PWA en Android
+      // Registro de Service Worker para PWA (iOS Safari y Android) con caché offline completa
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js').catch(err => {
-            console.log('SW note:', err);
-          });
+          navigator.serviceWorker.register('./sw.js', { scope: './' })
+            .then(reg => {
+              if (reg.update) reg.update();
+            })
+            .catch(err => {
+              console.log('SW registration note:', err);
+            });
         });
+      }
+
+      // Preservar la experiencia a pantalla completa en iOS Safari Standalone
+      if (('standalone' in window.navigator) && window.navigator.standalone) {
+        document.addEventListener('click', (e) => {
+          let target = e.target;
+          while (target && target.nodeName !== 'A' && target.nodeName !== 'HTML') {
+            target = target.parentNode;
+          }
+          if (target && target.nodeName === 'A' && target.href && !target.href.startsWith('mailto') && target.origin === window.location.origin) {
+            e.preventDefault();
+            window.location.href = target.href;
+          }
+        }, false);
       }
 
       // Desbloquear audio en el primer toque (imprescindible en móvil)
@@ -976,9 +1003,14 @@
 
       let nivelesHecho = [];
 
-      function addMessage(text, sender, link, img, action) {
+      function addMessage(text, sender, link, img, action, isRemote) {
         if (sender === 'chimpy') {
           hideTyping();
+        }
+
+        // Si es un mensaje local y hay conexión en directo P2P activa, retransmitir
+        if (!isRemote && typeof window.broadcastLiveMessage === 'function') {
+          window.broadcastLiveMessage(text, sender);
         }
 
         const container = document.createElement('div');
@@ -1137,9 +1169,20 @@
       function enviar() {
         const text = input.innerText.trim();
         if (!text) return;
-        addMessage(text, 'pinchi');
+
+        const isChimpi = window._isChimpiMode;
+        const sender = isChimpi ? 'chimpy' : 'pinchi';
+        addMessage(text, sender);
         input.innerText = '';
         input.classList.add('empty');
+
+        // Si estamos en modo Chimpi o conectados en vivo, NO salta el bot
+        const isLive = window._isChimpiMode || (window._liveConnection && window._liveConnection.open && window._botSilenced !== false);
+        if (isLive) {
+          hideTyping();
+          return;
+        }
+
         showTyping();
         setTimeout(() => {
           respuestaChimpi();
@@ -1178,12 +1221,35 @@
         }
       });
 
-      function zumbido() {
+      function agitarPantalla() {
         if (navigator.vibrate) {
           try { navigator.vibrate([100, 50, 100, 50, 200, 50, 300]); } catch(e){}
         }
-        buzzSound.currentTime = 0;
-        buzzSound.play().catch(e => console.log(e));
+        if (buzzSound) {
+          buzzSound.currentTime = 0;
+          buzzSound.play().catch(e => console.log(e));
+        }
+
+        let count = 0;
+        const interval = setInterval(() => {
+          const x = count % 2 === 0 ? 10 : -10;
+          chatWindow.style.transform = `translateX(${x}px)`;
+          count++;
+          if (count > 12) {
+            clearInterval(interval);
+            chatWindow.style.transform = 'translateX(0)';
+          }
+        }, 35);
+      }
+      window.agitarPantalla = agitarPantalla;
+
+      let lastZumbidoSent = 0;
+      function zumbido() {
+        const now = Date.now();
+        if (now - lastZumbidoSent < 1500) return;
+        lastZumbidoSent = now;
+
+        agitarPantalla();
 
         const container = document.createElement('div');
         container.className = 'message-container aviso';
@@ -1194,16 +1260,16 @@
         chat.appendChild(container);
         chat.scrollTop = chat.scrollHeight;
 
-        let count = 0;
-        const interval = setInterval(() => {
-          const x = count % 2 === 0 ? 8 : -8;
-          chatWindow.style.transform = `translateX(${x}px)`;
-          count++;
-          if (count > 10) {
-            clearInterval(interval);
-            chatWindow.style.transform = 'translateX(0)';
-          }
-        }, 40);
+        // Si hay conexión P2P activa, retransmitir el zumbido
+        if (typeof window.sendLiveBuzz === 'function') {
+          window.sendLiveBuzz();
+        }
+
+        // Si estamos en modo Chimpi o conectados en vivo, NO salta el bot nosti
+        const isLive = window._isChimpiMode || (window._liveConnection && window._liveConnection.open && window._botSilenced !== false);
+        if (isLive) {
+          return;
+        }
 
         setTimeout(() => {
           showTyping();
@@ -1217,14 +1283,22 @@
         if (isPlayPig) return;
         const videoSrc = './resources/msn-pig-dance.mp4';
         addVideo(videoSrc, 11);
-        enviarMensaje(mensajesBaile);
+
+        const isLive = window._isChimpiMode || (window._liveConnection && window._liveConnection.open && window._botSilenced !== false);
+        if (!isLive) {
+          enviarMensaje(mensajesBaile);
+        }
       }
 
       function videoGuitar() {
         if (isPlayPig) return;
         const videoSrc = './resources/msn-guitarra.mp4';
         addVideo(videoSrc, 5);
-        enviarMensaje(mensajesGuitarra);
+
+        const isLive = window._isChimpiMode || (window._liveConnection && window._liveConnection.open && window._botSilenced !== false);
+        if (!isLive) {
+          enviarMensaje(mensajesGuitarra);
+        }
       }
 
       function enviarMensaje(lista) {
@@ -1290,6 +1364,10 @@
 
 
       function respuestaChimpi() {
+        if (window._isChimpiMode || (window._liveConnection && window._liveConnection.open && window._botSilenced !== false)) {
+          hideTyping();
+          return;
+        }
 
         if (numResponses <= 1) {
           numResponses++;
@@ -1782,6 +1860,9 @@
     <script src="./games/hangman.js"></script>
     <script src="./games/bubbles.js"></script>
     <script src="./games/quiz.js"></script>
+    <!-- Modo Real P2P WebRTC Chimpi & Pinchi -->
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="./live_chimpi.js"></script>
 </body>
 
 </html>
