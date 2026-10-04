@@ -74,7 +74,7 @@ var MSN_GAMES_CATALOG = [
   {
     id: 'memory',
     title: 'Reto de Memoria',
-    desc: 'Encuentra las 6 parejas de momentazos',
+    desc: 'Duelo en directo 🐧 vs 🐷 o modo individual',
     icon: '🧠',
     fn: 'openMemoryGame'
   },
@@ -203,6 +203,14 @@ function openGamesHub() {
       if (card) {
         card.addEventListener('click', function() {
           playRetroTone(440, 'triangle', 0.08);
+
+          // Si el juego soporta modo Live y estamos en conexión P2P activa
+          var isLive = window._liveConnection && window._liveConnection.open;
+          if (isLive && (g.id === 'tictactoe' || g.id === 'memory')) {
+            showLiveGameChoice(g);
+            return;
+          }
+
           if (typeof window[g.fn] === 'function') {
             window[g.fn]();
           } else if (typeof window[g.fn] !== 'undefined') {
@@ -218,6 +226,38 @@ function openGamesHub() {
   if (modal) modal.style.display = 'flex';
 }
 window.openGamesHub = openGamesHub;
+
+function showLiveGameChoice(g) {
+  var content = window.gameContent || document.getElementById('gameContent');
+  var title = window.gameTitle || document.getElementById('gameTitle');
+  if (title) title.textContent = g.icon + ' ' + g.title;
+
+  var isChimpi = !!window._isChimpiMode;
+  var opponent = isChimpi ? 'Pinchi 🐧' : 'Chimpi 🐷';
+
+  if (content) {
+    content.innerHTML =
+      '<div style="text-align:center;padding:16px 8px;">' +
+        '<div style="font-size:42px;margin-bottom:8px;">' + g.icon + '</div>' +
+        '<div style="font-weight:bold;font-size:16px;color:#004a9f;margin-bottom:6px;">' + g.title + '</div>' +
+        '<div style="font-size:13px;color:#444;margin-bottom:18px;max-width:300px;margin-left:auto;margin-right:auto;">' +
+          '🟢 ¡Estás conectado en directo con <b>' + opponent + '</b>! ¿Cómo quieres jugar?' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:10px;max-width:270px;margin:0 auto;">' +
+          '<button class="msn-game-launch-btn" style="background:#28a745;padding:10px 14px;font-size:13px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'' + g.id + '\');">' +
+            '📨 Enviar Invitación a ' + opponent +
+          '</button>' +
+          '<button class="msn-game-launch-btn" style="background:#6c757d;padding:8px 12px;font-size:12px;" onclick="window[\'' + g.fn + '\']();">' +
+            '👤 Jugar en Solitario' +
+          '</button>' +
+        '</div>' +
+        '<div style="margin-top:16px;">' +
+          hubBackBtnHtml() +
+        '</div>' +
+      '</div>';
+  }
+}
+window.showLiveGameChoice = showLiveGameChoice;
 
 // Inicialización de botones y eventos
 function initGamesHubOrchestrator() {

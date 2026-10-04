@@ -1,5 +1,5 @@
-// Service Worker v5 - Soporte Offline Completo para iOS Safari y Android PWA
-const CACHE_NAME = 'msn-pinchi-v5';
+// Service Worker v8 - Invitaciones a Juegos MSN Retro y Modo Live
+const CACHE_NAME = 'msn-pinchi-v8';
 
 const CORE_ASSETS = [
   './',
