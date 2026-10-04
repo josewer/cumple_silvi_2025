@@ -176,6 +176,13 @@ var MSN_GAMES_CATALOG = [
     desc: '¿Quién conoce mejor a quién? Preguntas cómicas',
     icon: '💑',
     fn: 'openCoupleQuizGame'
+  },
+  {
+    id: 'battleship',
+    title: 'Hundir la Flota',
+    desc: 'Batalla naval 6x6: Radar, torpedos y barcos en vivo',
+    icon: '🚢',
+    fn: 'openBattleshipGame'
   }
 ];
 
@@ -247,7 +254,7 @@ function openGamesHub() {
 
           // Si el juego soporta modo Live y estamos en conexión P2P activa
           var isLive = window._liveConnection && window._liveConnection.open;
-          if (isLive && (g.id === 'tictactoe' || g.id === 'memory')) {
+          if (isLive && (g.id === 'tictactoe' || g.id === 'memory' || g.id === 'battleship')) {
             showLiveGameChoice(g);
             return;
           }
@@ -288,7 +295,7 @@ function showLiveGameChoice(g) {
           '<button class="msn-game-launch-btn" style="background:#28a745;padding:10px 14px;font-size:13px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'' + g.id + '\');">' +
             '📨 Enviar Invitación a ' + opponent +
           '</button>' +
-          '<button class="msn-game-launch-btn" style="background:#6c757d;padding:8px 12px;font-size:12px;" onclick="window[\'' + g.fn + '\']();">' +
+          '<button class="msn-game-launch-btn" style="background:#6c757d;padding:8px 12px;font-size:12px;" onclick="window[\'' + g.fn + '\'](true);">' +
             '👤 Jugar en Solitario' +
           '</button>' +
         '</div>' +

@@ -82,6 +82,9 @@
             <button id="launchLiveMemory" style="background:#00d2d3;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;color:#111;">
               🧠 Invitar Memoria
             </button>
+            <button id="launchLiveFleet" style="background:#e67e22;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;color:#fff;">
+              🚢 Invitar Flota
+            </button>
           </div>
         `;
 
@@ -104,6 +107,11 @@
         const memBtn = document.getElementById('launchLiveMemory');
         if (memBtn) {
           memBtn.onclick = () => window.sendLiveGameInvite('memory');
+        }
+
+        const fleetBtn = document.getElementById('launchLiveFleet');
+        if (fleetBtn) {
+          fleetBtn.onclick = () => window.sendLiveGameInvite('battleship');
         }
       } else {
         banner.style.background = '#ffc107';
@@ -138,6 +146,9 @@
               <button id="pinchiInviteMem" style="background:#28a745;color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;">
                 🧠 Invitar Memoria
               </button>
+              <button id="pinchiInviteFleet" style="background:#e67e22;color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;">
+                🚢 Invitar Flota
+              </button>
             </div>
           </div>
         `;
@@ -146,6 +157,8 @@
         if (pTTT) pTTT.onclick = () => window.sendLiveGameInvite('tictactoe');
         const pMem = document.getElementById('pinchiInviteMem');
         if (pMem) pMem.onclick = () => window.sendLiveGameInvite('memory');
+        const pFleet = document.getElementById('pinchiInviteFleet');
+        if (pFleet) pFleet.onclick = () => window.sendLiveGameInvite('battleship');
 
         const mobileStatus = document.querySelector('.mobile-contact-status');
         if (mobileStatus) {
@@ -430,11 +443,31 @@
           handleIncomingGameAbandon(data);
           break;
 
+        case 'bs_ready':
+          if (typeof window._handleRemoteBattleshipReady === 'function') {
+            window._handleRemoteBattleshipReady();
+          }
+          break;
+
+        case 'bs_shot':
+          if (typeof window._handleRemoteBattleshipShot === 'function') {
+            window._handleRemoteBattleshipShot(data);
+          }
+          break;
+
+        case 'bs_shot_result':
+          if (typeof window._handleRemoteBattleshipShotResult === 'function') {
+            window._handleRemoteBattleshipShotResult(data);
+          }
+          break;
+
         case 'open_game':
           if (data.game === 'tictactoe' && typeof openTicTacToeGame === 'function') {
             openTicTacToeGame();
           } else if (data.game === 'memory' && typeof openMemoryGame === 'function') {
             openMemoryGame(data.deckItemIds, data.startingTurn, true);
+          } else if (data.game === 'battleship' && typeof openBattleshipGame === 'function') {
+            openBattleshipGame();
           } else if (typeof openGamesHub === 'function') {
             openGamesHub();
           }
@@ -595,12 +628,14 @@
     if (!activeConn || !activeConn.open) {
       if (gameId === 'tictactoe' && typeof openTicTacToeGame === 'function') openTicTacToeGame();
       else if (gameId === 'memory' && typeof openMemoryGame === 'function') openMemoryGame();
+      else if (gameId === 'battleship' && typeof openBattleshipGame === 'function') openBattleshipGame();
       return;
     }
 
     const gameMap = {
       tictactoe: { title: 'Tres en Raya MSN', icon: '❌⭕' },
-      memory: { title: 'Reto de Memoria', icon: '🧠' }
+      memory: { title: 'Reto de Memoria', icon: '🧠' },
+      battleship: { title: 'Hundir la Flota', icon: '🚢' }
     };
     const g = gameMap[gameId] || { title: 'Juego MSN', icon: '🎮' };
     const inviteId = 'inv_' + Date.now();
@@ -718,6 +753,8 @@
           openTicTacToeGame();
         } else if (gameId === 'memory' && typeof openMemoryGame === 'function') {
           openMemoryGame(window._incomingInviteDeck, '🐧', true);
+        } else if (gameId === 'battleship' && typeof openBattleshipGame === 'function') {
+          openBattleshipGame();
         }
       }, 400);
     }
@@ -742,6 +779,8 @@
         } else if (data.gameId === 'memory' && typeof openMemoryGame === 'function') {
           const syncDeck = data.deckItemIds || window._lastInviteDeck;
           openMemoryGame(syncDeck, '🐧', false);
+        } else if (data.gameId === 'battleship' && typeof openBattleshipGame === 'function') {
+          openBattleshipGame();
         }
       }, 400);
     } else {

@@ -1,5 +1,5 @@
-// Service Worker v20 - Detección estricta de clic de cierre y abandono de juego en vivo
-const CACHE_NAME = 'msn-pinchi-v20';
+// Service Worker v22 - Corrección de apertura de modal y conexión WebRTC en Hundir la Flota
+const CACHE_NAME = 'msn-pinchi-v22';
 
 const CORE_ASSETS = [
   './',
@@ -22,6 +22,7 @@ const CORE_ASSETS = [
   './games/hangman.js',
   './games/bubbles.js',
   './games/quiz.js',
+  './games/battleship.js',
   // CDN externa para modo WebRTC
   'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js',
   // Recursos visuales, avatares e interfaz
