@@ -14,9 +14,24 @@ window.gameContent = gameContent;
 window.closeGameBtn = closeGameBtn;
 
 // Cierre y limpieza de bucles/timers activos de cualquier minijuego
-function closeGameModal() {
+function closeGameModal(isRemoteClose) {
+  // Asegurar que solo sea remoto si el argumento es estrictamente true booleano
+  // (evita que eventos MouseEvent de onclick se confundan con remoto)
+  var isRemote = (isRemoteClose === true);
   var modal = window.gameModal || document.getElementById('gameModal');
   if (modal) modal.style.display = 'none';
+
+  // Si se abandona una partida activa en vivo por parte del usuario local:
+  if (!isRemote && window._activeLiveGame) {
+    var abandonedGame = window._activeLiveGame;
+    window._activeLiveGame = null;
+    if (typeof window.sendLiveGameAbandon === 'function') {
+      window.sendLiveGameAbandon(abandonedGame);
+    }
+  } else if (isRemote) {
+    window._activeLiveGame = null;
+  }
+
   if (window._gameInterval) {
     clearInterval(window._gameInterval);
     window._gameInterval = null;
@@ -188,8 +203,34 @@ function openGamesHub() {
     );
   }).join('');
 
+  var isLive = !!(window._liveConnection && window._liveConnection.open);
+  var isChimpi = !!window._isChimpiMode;
+  var opponentName = isChimpi ? 'Pinchi 🐧' : 'Chimpi 🐷';
+
+  var liveInviteHeaderHtml = '';
+  if (isLive) {
+    liveInviteHeaderHtml =
+      '<div style="background:linear-gradient(135deg,#e7f5ff,#d0ebff);border:2px solid #0078d7;border-radius:10px;padding:10px 12px;margin-bottom:12px;width:100%;box-sizing:border-box;">' +
+        '<div style="font-weight:bold;font-size:13px;color:#004a9f;margin-bottom:4px;">' +
+          '🟢 ¡CONEXIÓN EN DIRECTO CON ' + opponentName.toUpperCase() + '! 💖' +
+        '</div>' +
+        '<div style="font-size:12px;color:#333;margin-bottom:8px;">' +
+          'Toca un botón para enviarle una invitación de juego al chat:' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">' +
+          '<button class="msn-game-launch-btn" style="background:#0078d7;padding:6px 12px;font-size:12px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'tictactoe\');">' +
+            '📨 Invitar a Tres en Raya ❌⭕' +
+          '</button>' +
+          '<button class="msn-game-launch-btn" style="background:#28a745;padding:6px 12px;font-size:12px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'memory\');">' +
+            '📨 Invitar a Memoria 🧠' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+  }
+
   if (content) {
     content.innerHTML =
+      liveInviteHeaderHtml +
       '<div style="font-size:14px;color:#333;margin-bottom:6px;">' +
         '¡Elige a qué minijuego quieres jugar con Chimpi el Cerdito! 🐧🐷✨' +
       '</div>' +
@@ -280,7 +321,13 @@ function initGamesHubOrchestrator() {
 
   var closeBtn = window.closeGameBtn || document.getElementById('closeGameBtn');
   if (closeBtn) {
-    closeBtn.onclick = closeGameModal;
+    closeBtn.onclick = function(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      closeGameModal(false);
+    };
   }
 }
 

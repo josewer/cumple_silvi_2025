@@ -12,11 +12,14 @@
 
   let peer = null;
   let activeConn = null;
+  let connectInterval = null;
+  let heartbeatInterval = null;
+
   window._liveConnection = null;
   window._isChimpiMode = isChimpiMode;
   window._botSilenced = true; // Por defecto cuando está en vivo, el bot nosti está silenciado
 
-  // Esperar a que PeerJS esté disponible
+  // Esperar a que PeerJS esté disponible en el navegador
   function ensurePeerLoaded(callback) {
     if (typeof Peer !== 'undefined') {
       callback();
@@ -27,9 +30,9 @@
         if (typeof Peer !== 'undefined') {
           clearInterval(interval);
           callback();
-        } else if (attempts > 30) {
+        } else if (attempts > 60) {
           clearInterval(interval);
-          console.log('PeerJS no disponible (posiblemente offline).');
+          console.warn('PeerJS no disponible tras 15 segundos.');
         }
       }, 250);
     }
@@ -42,7 +45,7 @@
       banner = document.createElement('div');
       banner.id = 'liveStatusBanner';
       banner.style.cssText = `
-        padding: 6px 12px;
+        padding: 8px 12px;
         font-size: 12px;
         font-weight: bold;
         text-align: center;
@@ -53,29 +56,31 @@
         gap: 8px;
         z-index: 9999;
         transition: background 0.3s;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
       `;
-      const chatWindow = document.querySelector('.chat-window');
+      // Selector corregido: soporta #chatWindow y .window
+      const chatWindow = document.getElementById('chatWindow') || document.querySelector('.window') || document.body;
       if (chatWindow) {
         chatWindow.insertBefore(banner, chatWindow.firstChild);
       }
     }
 
     if (isChimpiMode) {
+      // --- VISTA DE CHIMPI ---
       if (isConnected) {
         banner.style.background = '#28a745';
         banner.style.color = '#ffffff';
         banner.innerHTML = `
-          <span>🟢 <b>EN VIVO CON PINCHI:</b> Eres Chimpi (🐷). El bot nosti está silenciado.</span>
+          <span>🟢 <b>EN VIVO CON PINCHI:</b> Eres Chimpi (🐷). El bot está silenciado.</span>
           <div style="display:flex;gap:6px;margin-left:auto;flex-wrap:wrap;justify-content:center;">
-            <button id="toggleBotBtn" style="background:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:11px;font-weight:bold;cursor:pointer;color:#333;">
+            <button id="toggleBotBtn" style="background:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;color:#333;">
               ${window._botSilenced ? '🤖 Bot: 🔇 Silenciado' : '🤖 Bot: 🔊 Activo'}
             </button>
-            <button id="launchLiveTTT" style="background:#ffc107;border:none;border-radius:4px;padding:3px 8px;font-size:11px;font-weight:bold;cursor:pointer;color:#111;">
-              🎮 Duelo 3 en Raya
+            <button id="launchLiveTTT" style="background:#ffc107;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;color:#111;">
+              🎮 Invitar 3 en Raya
             </button>
-            <button id="launchLiveMemory" style="background:#00d2d3;border:none;border-radius:4px;padding:3px 8px;font-size:11px;font-weight:bold;cursor:pointer;color:#111;">
-              🧠 Duelo Memoria
+            <button id="launchLiveMemory" style="background:#00d2d3;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;color:#111;">
+              🧠 Invitar Memoria
             </button>
           </div>
         `;
@@ -93,47 +98,79 @@
 
         const tttBtn = document.getElementById('launchLiveTTT');
         if (tttBtn) {
-          tttBtn.onclick = () => {
-            if (typeof window.sendLiveGameInvite === 'function') {
-              window.sendLiveGameInvite('tictactoe');
-            } else if (typeof openTicTacToeGame === 'function') {
-              openTicTacToeGame();
-            }
-          };
+          tttBtn.onclick = () => window.sendLiveGameInvite('tictactoe');
         }
 
         const memBtn = document.getElementById('launchLiveMemory');
         if (memBtn) {
-          memBtn.onclick = () => {
-            if (typeof window.sendLiveGameInvite === 'function') {
-              window.sendLiveGameInvite('memory');
-            } else if (typeof openMemoryGame === 'function') {
-              openMemoryGame();
-            }
-          };
+          memBtn.onclick = () => window.sendLiveGameInvite('memory');
         }
       } else {
         banner.style.background = '#ffc107';
         banner.style.color = '#212529';
-        banner.innerHTML = `⏳ <b>MODO CHIMPI:</b> Esperando a que Pinchi abra la web en su móvil...`;
+        banner.innerHTML = `
+          <span>⏳ <b>MODO CHIMPI:</b> Conectando con el móvil de Pinchi...</span>
+          <button id="reconnectChimpiBtn" style="background:#212529;color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;margin-left:6px;">
+            🔄 Forzar Reconexión
+          </button>
+        `;
+        const reconBtn = document.getElementById('reconnectChimpiBtn');
+        if (reconBtn) {
+          reconBtn.onclick = () => {
+            initP2P();
+          };
+        }
       }
     } else {
-      // Vista de Pinchi
+      // --- VISTA DE PINCHI ---
       if (isConnected) {
         banner.style.display = 'flex';
         banner.style.background = '#e7f5ff';
         banner.style.color = '#0078d7';
-        banner.style.borderBottom = '1px solid #70a1ff';
-        banner.innerHTML = `✨ <b>¡Conexión Mágica!</b> Chimpi está en directo contigo ahora mismo 🐷💖`;
+        banner.style.borderBottom = '1.5px solid #70a1ff';
+        banner.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;width:100%;">
+            <span>✨ <b>¡Chimpi está en directo contigo! 🐷💖</b></span>
+            <div style="display:flex;gap:6px;margin-left:auto;">
+              <button id="pinchiInviteTTT" style="background:#0078d7;color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;">
+                ❌⭕ Invitar 3 en Raya
+              </button>
+              <button id="pinchiInviteMem" style="background:#28a745;color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;">
+                🧠 Invitar Memoria
+              </button>
+            </div>
+          </div>
+        `;
+
+        const pTTT = document.getElementById('pinchiInviteTTT');
+        if (pTTT) pTTT.onclick = () => window.sendLiveGameInvite('tictactoe');
+        const pMem = document.getElementById('pinchiInviteMem');
+        if (pMem) pMem.onclick = () => window.sendLiveGameInvite('memory');
+
         const mobileStatus = document.querySelector('.mobile-contact-status');
         if (mobileStatus) {
           mobileStatus.innerHTML = `🟢 <b>En directo contigo ahora mismo</b>`;
         }
       } else {
         banner.style.display = 'none';
+        const mobileStatus = document.querySelector('.mobile-contact-status');
+        if (mobileStatus) {
+          mobileStatus.innerHTML = `🎵 Escuchando: Avril Lavigne - Complicated`;
+        }
       }
     }
   }
+
+  const PEER_CONFIG = {
+    debug: 1,
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' }
+      ]
+    }
+  };
 
   // Inicialización de la red P2P
   function initP2P() {
@@ -150,68 +187,164 @@
     });
   }
 
-  // --- MODO PINCHI ---
+  // Liberar ID inmediatamente si se cierra o recarga la pestaña
+  window.addEventListener('beforeunload', () => {
+    if (peer && !peer.destroyed) {
+      try { peer.destroy(); } catch (e) {}
+    }
+  });
+
+  // --- MODO PINCHI (ESCUCHA CONEXIÓN) ---
   function setupPinchiMode() {
-    peer = new Peer(PINCHI_PEER_ID, {
-      debug: 1
-    });
+    if (peer && !peer.destroyed) {
+      try { peer.destroy(); } catch (e) {}
+    }
+
+    peer = new Peer(PINCHI_PEER_ID, PEER_CONFIG);
 
     peer.on('open', (id) => {
-      console.log('Pinchi lista para recibir a Chimpi.');
+      console.log('Pinchi lista para recibir a Chimpi. ID:', id);
     });
 
     peer.on('connection', (conn) => {
-      if (activeConn && activeConn !== conn) {
-        try { activeConn.close(); } catch (e) {}
+      console.log('Pinchi: Conexión entrante de Chimpi detectada...');
+      setupConnectionDataHandlers(conn);
+
+      const markReady = () => {
+        console.log('Pinchi: ¡Canal P2P abierto y listo con Chimpi!');
+        if (activeConn && activeConn !== conn) {
+          try { activeConn.close(); } catch (e) {}
+        }
+        activeConn = conn;
+        window._liveConnection = conn;
+        updateLiveUI('connected', true);
+      };
+
+      if (conn.open) {
+        markReady();
+      } else {
+        conn.on('open', markReady);
       }
-      activeConn = conn;
-      window._liveConnection = conn;
-      setupConnectionHandlers(conn, 'pinchi');
+
+      conn.on('close', () => {
+        console.log('Pinchi: Conexión con Chimpi cerrada.');
+        updateLiveUI('disconnected', false);
+        if (activeConn === conn) {
+          activeConn = null;
+          window._liveConnection = null;
+        }
+      });
+
+      conn.on('error', (err) => {
+        console.warn('Pinchi: Error en conexión:', err);
+      });
     });
 
     peer.on('error', (err) => {
+      console.warn('Pinchi Peer error:', err.type, err);
       if (err.type === 'unavailable-id') {
-        console.log('ID ya en uso en otra pestaña.');
+        console.log('ID temporalmente retenida en servidor. Reintentando en 2.5s...');
+        setTimeout(() => {
+          if (!activeConn || !activeConn.open) {
+            setupPinchiMode();
+          }
+        }, 2500);
+      } else if (err.type === 'disconnected' || err.type === 'network') {
+        try { peer.reconnect(); } catch (e) {}
       }
+    });
+
+    peer.on('disconnected', () => {
+      console.log('Pinchi Peer desconectado del servidor. Intentando reconectar...');
+      try { peer.reconnect(); } catch (e) {}
     });
   }
 
-  // --- MODO CHIMPI ---
+  // --- MODO CHIMPI (CONECTA A PINCHI) ---
   function setupChimpiMode() {
     updateLiveUI('waiting', false);
     adaptUIToChimpi();
 
-    peer = new Peer({ debug: 1 });
+    if (peer && !peer.destroyed) {
+      try { peer.destroy(); } catch (e) {}
+    }
 
-    peer.on('open', () => {
+    peer = new Peer(PEER_CONFIG);
+
+    peer.on('open', (id) => {
+      console.log('Chimpi Peer abierto. ID propia:', id);
       connectToPinchi();
     });
 
+    peer.on('error', (err) => {
+      console.warn('Chimpi Peer error:', err.type, err);
+      isConnecting = false;
+      if (err.type === 'peer-unavailable') {
+        updateLiveUI('waiting', false);
+      }
+    });
+
+    peer.on('disconnected', () => {
+      try { peer.reconnect(); } catch (e) {}
+    });
+
+    let isConnecting = false;
+
     function connectToPinchi() {
-      if (activeConn && activeConn.open) return;
-      const conn = peer.connect(PINCHI_PEER_ID, {
-        reliable: true
-      });
+      if (isConnecting || (activeConn && activeConn.open)) return;
+      if (!peer || peer.destroyed || !peer.open) return;
 
-      conn.on('open', () => {
-        activeConn = conn;
-        window._liveConnection = conn;
-        setupConnectionHandlers(conn, 'chimpi');
-      });
+      isConnecting = true;
+      const connectTimeout = setTimeout(() => {
+        isConnecting = false;
+      }, 4000);
 
-      conn.on('close', () => {
-        updateLiveUI('disconnected', false);
-        activeConn = null;
-        window._liveConnection = null;
-        setTimeout(connectToPinchi, 4000);
-      });
+      console.log('Chimpi intentando conectar a Pinchi...');
+      try {
+        const conn = peer.connect(PINCHI_PEER_ID, {
+          reliable: true
+        });
+
+        setupConnectionDataHandlers(conn);
+
+        conn.on('open', () => {
+          clearTimeout(connectTimeout);
+          isConnecting = false;
+          console.log('¡Chimpi conectado con éxito a Pinchi!');
+          activeConn = conn;
+          window._liveConnection = conn;
+          updateLiveUI('connected', true);
+        });
+
+        conn.on('close', () => {
+          clearTimeout(connectTimeout);
+          isConnecting = false;
+          console.log('Conexión con Pinchi cerrada.');
+          updateLiveUI('disconnected', false);
+          if (activeConn === conn) {
+            activeConn = null;
+            window._liveConnection = null;
+          }
+        });
+
+        conn.on('error', (err) => {
+          clearTimeout(connectTimeout);
+          isConnecting = false;
+          console.warn('Error en conexión con Pinchi:', err);
+        });
+      } catch (e) {
+        clearTimeout(connectTimeout);
+        isConnecting = false;
+        console.warn('Excepción al conectar con Pinchi:', e);
+      }
     }
 
-    setInterval(() => {
+    if (connectInterval) clearInterval(connectInterval);
+    connectInterval = setInterval(() => {
       if (!activeConn || !activeConn.open) {
         connectToPinchi();
       }
-    }, 4500);
+    }, 3000);
   }
 
   function adaptUIToChimpi() {
@@ -236,13 +369,23 @@
   }
 
   // Manejo de datos WebRTC
-  function setupConnectionHandlers(conn, role) {
-    updateLiveUI('connected', true);
+  function setupConnectionDataHandlers(conn) {
+    // Heartbeat periódico para evitar que conexiones móviles se congelen
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    heartbeatInterval = setInterval(() => {
+      if (conn && conn.open) {
+        try { conn.send({ type: 'ping' }); } catch (e) {}
+      }
+    }, 6000);
 
     conn.on('data', (data) => {
       if (!data || typeof data !== 'object') return;
 
       switch (data.type) {
+        case 'ping':
+          // Mantener vivo el canal
+          break;
+
         case 'chat':
           handleIncomingChatMessage(data);
           break;
@@ -283,6 +426,10 @@
           handleIncomingGameInviteResponse(data);
           break;
 
+        case 'game_abandon':
+          handleIncomingGameAbandon(data);
+          break;
+
         case 'open_game':
           if (data.game === 'tictactoe' && typeof openTicTacToeGame === 'function') {
             openTicTacToeGame();
@@ -300,24 +447,60 @@
     });
 
     conn.on('close', () => {
+      console.log('Data connection cerrada.');
+      if (window._activeLiveGame) {
+        const game = window._activeLiveGame;
+        window._activeLiveGame = null;
+        if (typeof closeGameModal === 'function') closeGameModal(true);
+        const chat = document.getElementById('chat');
+        if (chat) {
+          const container = document.createElement('div');
+          container.className = 'message-container aviso';
+          container.innerHTML = `
+            <div class="message aviso" style="color:#c0392b;font-weight:bold;font-size:12px;padding:5px 9px;max-width:85%;">
+              🚪 Conexión perdida durante la partida de <b>${game}</b>. Partida finalizada.
+            </div>
+          `;
+          chat.appendChild(container);
+          chat.scrollTop = chat.scrollHeight;
+        }
+      }
       updateLiveUI('closed', false);
       activeConn = null;
       window._liveConnection = null;
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
     });
   }
 
   // Retransmitir mensaje a la otra persona cuando el usuario local envía algo
   window.broadcastLiveMessage = function (text, sender) {
-    if (!activeConn || !activeConn.open) return;
-    activeConn.send({
-      type: 'chat',
-      text: text,
-      sender: sender
-    });
-    activeConn.send({
-      type: 'typing',
-      isTyping: false
-    });
+    if (!activeConn || !activeConn.open) {
+      console.log('Mensaje no transmitido: conexión P2P no abierta actualmente.');
+      if (isChimpiMode) {
+        const chat = document.getElementById('chat');
+        if (chat) {
+          const warn = document.createElement('div');
+          warn.className = 'message-container aviso';
+          warn.innerHTML = `<div class="message aviso" style="color:#d35400;font-size:11px;">⚠️ Esperando conexión: Pinchi debe tener abierta la web en su móvil para recibirlo.</div>`;
+          chat.appendChild(warn);
+          chat.scrollTop = chat.scrollHeight;
+        }
+      }
+      return;
+    }
+    try {
+      activeConn.send({
+        type: 'chat',
+        text: text,
+        sender: sender
+      });
+      activeConn.send({
+        type: 'typing',
+        isTyping: false
+      });
+    } catch (e) {
+      console.warn('Error al transmitir mensaje P2P:', e);
+    }
   };
 
   function handleIncomingChatMessage(data) {
@@ -395,12 +578,6 @@
       deckItemIds: deckItemIds,
       startingTurn: startingTurn || '🐧'
     });
-    activeConn.send({
-      type: 'open_game',
-      game: 'memory',
-      deckItemIds: deckItemIds,
-      startingTurn: startingTurn || '🐧'
-    });
   };
 
   window.sendLiveMemoryFlip = function (cardIndex) {
@@ -431,16 +608,27 @@
     const mySymbol = isChimpiMode ? '🐷' : '🐧';
     const opponentName = isChimpiMode ? 'Pinchi' : 'Chimpi';
 
-    // 1. Enviar paquete WebRTC a la otra persona
-    activeConn.send({
-      type: 'game_invite',
-      inviteId: inviteId,
-      gameId: gameId,
-      gameTitle: g.title,
-      gameIcon: g.icon,
-      from: myName,
-      fromSymbol: mySymbol
-    });
+    let deckItemIds = null;
+    if (gameId === 'memory' && typeof window.generateMemoryDeckIds === 'function') {
+      deckItemIds = window.generateMemoryDeckIds();
+    }
+    window._lastInviteDeck = deckItemIds;
+
+    // 1. Enviar paquete WebRTC a la otra persona con la baraja idéntica
+    try {
+      activeConn.send({
+        type: 'game_invite',
+        inviteId: inviteId,
+        gameId: gameId,
+        gameTitle: g.title,
+        gameIcon: g.icon,
+        from: myName,
+        fromSymbol: mySymbol,
+        deckItemIds: deckItemIds
+      });
+    } catch (e) {
+      console.warn('Error enviando invitación WebRTC:', e);
+    }
 
     // 2. Notificar en el chat del remitente
     const chat = document.getElementById('chat');
@@ -448,9 +636,8 @@
       const container = document.createElement('div');
       container.className = 'message-container aviso';
       container.innerHTML = `
-        <div class="message aviso" id="invite-box-${inviteId}" style="max-width:92%;">
-          📨 Has enviado una invitación a <b>${opponentName}</b> para jugar a <b>${g.icon} ${g.title}</b>.<br>
-          <span style="font-size:11px;color:#777;font-style:italic;">Esperando respuesta de ${opponentName}... ⏳</span>
+        <div class="message aviso" id="invite-box-${inviteId}" style="max-width:85%;font-size:12px;padding:4px 8px;">
+          📨 Invitando a <b>${opponentName}</b> a <b>${g.icon} ${g.title}</b>... ⏳
         </div>
       `;
       chat.appendChild(container);
@@ -464,6 +651,10 @@
     const chat = document.getElementById('chat');
     if (!chat) return;
 
+    if (data.gameId === 'memory' && Array.isArray(data.deckItemIds)) {
+      window._incomingInviteDeck = data.deckItemIds;
+    }
+
     // Sonido clásico de notificación de MSN
     const sound = document.getElementById('soundNotification');
     if (sound) {
@@ -476,25 +667,18 @@
     container.className = 'message-container aviso';
     container.innerHTML = `
       <div class="message msn-invite-bubble" id="incoming-invite-${data.inviteId}">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:32px;">${data.gameIcon}</span>
-          <div style="text-align:left;">
-            <div style="font-weight:bold;font-size:13px;color:#004a9f;">¡Invitación a juego de MSN!</div>
-            <div style="font-size:12px;color:#222;margin-top:2px;">
-              <b>${data.from} ${data.fromSymbol}</b> te ha invitado a jugar a:
-            </div>
-            <div style="font-size:14px;font-weight:bold;color:#111;margin-top:2px;">
-              ${data.gameIcon} ${data.gameTitle}
-            </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <div style="font-size:12px;color:#004a9f;">
+            ${data.gameIcon} <b>${data.from}</b> te invita a <b>${data.gameTitle}</b>
           </div>
-        </div>
-        <div style="display:flex;gap:10px;margin-top:10px;justify-content:flex-end;" id="invite-btns-${data.inviteId}">
-          <button type="button" class="msn-invite-btn accept" onclick="window.respondToGameInvite('${data.inviteId}', '${data.gameId}', true)">
-            ✅ Aceptar
-          </button>
-          <button type="button" class="msn-invite-btn decline" onclick="window.respondToGameInvite('${data.inviteId}', '${data.gameId}', false)">
-            ❌ Rechazar
-          </button>
+          <div style="display:flex;gap:6px;margin-left:auto;" id="invite-btns-${data.inviteId}">
+            <button type="button" class="msn-invite-btn accept" onclick="window.respondToGameInvite('${data.inviteId}', '${data.gameId}', true)">
+              ✅ Aceptar
+            </button>
+            <button type="button" class="msn-invite-btn decline" onclick="window.respondToGameInvite('${data.inviteId}', '${data.gameId}', false)">
+              ❌ Rechazar
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -508,20 +692,23 @@
 
     if (btnsElem) {
       if (accepted) {
-        btnsElem.innerHTML = `<span style="color:#28a745;font-weight:bold;font-size:12px;">✅ ¡Has aceptado la invitación! Abriendo partida... 🚀</span>`;
+        btnsElem.innerHTML = `<span style="color:#28a745;font-weight:bold;font-size:11px;">✅ ¡Aceptado! Abriendo... 🚀</span>`;
       } else {
-        btnsElem.innerHTML = `<span style="color:#777;font-style:italic;font-size:12px;">❌ Has rechazado la invitación.</span>`;
+        btnsElem.innerHTML = `<span style="color:#777;font-style:italic;font-size:11px;">❌ Rechazado</span>`;
       }
     }
 
     if (activeConn && activeConn.open) {
-      activeConn.send({
-        type: 'game_invite_response',
-        inviteId: inviteId,
-        gameId: gameId,
-        accepted: accepted,
-        from: myName
-      });
+      try {
+        activeConn.send({
+          type: 'game_invite_response',
+          inviteId: inviteId,
+          gameId: gameId,
+          accepted: accepted,
+          deckItemIds: window._incomingInviteDeck || null,
+          from: myName
+        });
+      } catch (e) {}
     }
 
     if (accepted) {
@@ -530,7 +717,7 @@
         if (gameId === 'tictactoe' && typeof openTicTacToeGame === 'function') {
           openTicTacToeGame();
         } else if (gameId === 'memory' && typeof openMemoryGame === 'function') {
-          openMemoryGame();
+          openMemoryGame(window._incomingInviteDeck, '🐧', true);
         }
       }, 400);
     }
@@ -541,9 +728,9 @@
     if (data.accepted) {
       if (inviteBox) {
         inviteBox.innerHTML = `
-          <div style="color:#28a745;font-weight:bold;font-size:13px;">
-            🎉 ¡<b>${data.from}</b> ha aceptado tu invitación! ¡A jugar! 🚀
-          </div>
+          <span style="color:#28a745;font-weight:bold;font-size:11px;">
+            🎉 ¡<b>${data.from}</b> ha aceptado! ¡A jugar! 🚀
+          </span>
         `;
       }
       if (typeof playRetroTone === 'function') playRetroTone(620, 'triangle', 0.2);
@@ -553,18 +740,73 @@
         if (data.gameId === 'tictactoe' && typeof openTicTacToeGame === 'function') {
           openTicTacToeGame();
         } else if (data.gameId === 'memory' && typeof openMemoryGame === 'function') {
-          openMemoryGame();
+          const syncDeck = data.deckItemIds || window._lastInviteDeck;
+          openMemoryGame(syncDeck, '🐧', false);
         }
       }, 400);
     } else {
       if (inviteBox) {
         inviteBox.innerHTML = `
-          <div style="color:#c0392b;font-style:italic;font-size:12px;">
-            🥺 <b>${data.from}</b> no puede jugar en este momento (invitación rechazada).
-          </div>
+          <span style="color:#c0392b;font-style:italic;font-size:11px;">
+            🥺 <b>${data.from}</b> no puede jugar ahora
+          </span>
         `;
       }
       if (typeof playRetroTone === 'function') playRetroTone(220, 'sine', 0.15);
+    }
+  }
+
+  // Notificar abandono voluntario de partida activa
+  window.sendLiveGameAbandon = function (gameName) {
+    const myName = isChimpiMode ? 'Chimpi' : 'Pinchi';
+    const mySymbol = isChimpiMode ? '🐷' : '🐧';
+
+    if (activeConn && activeConn.open) {
+      try {
+        activeConn.send({
+          type: 'game_abandon',
+          game: gameName,
+          from: myName,
+          fromSymbol: mySymbol
+        });
+      } catch (e) {}
+    }
+
+    const chat = document.getElementById('chat');
+    if (chat) {
+      const container = document.createElement('div');
+      container.className = 'message-container aviso';
+      container.innerHTML = `
+        <div class="message aviso" style="color:#c0392b;font-size:12px;padding:4px 8px;max-width:85%;">
+          🚪 Has abandonado la partida de <b>${gameName}</b>.
+        </div>
+      `;
+      chat.appendChild(container);
+      chat.scrollTop = chat.scrollHeight;
+    }
+  };
+
+  // Procesar abandono del rival
+  function handleIncomingGameAbandon(data) {
+    if (typeof closeGameModal === 'function') {
+      closeGameModal(true); // Cerrar juego sin reenviar abandono
+    }
+    window._activeLiveGame = null;
+
+    if (typeof playRetroTone === 'function') playRetroTone(220, 'sine', 0.25);
+    if (navigator.vibrate) try { navigator.vibrate([80, 50, 80]); } catch (e) {}
+
+    const chat = document.getElementById('chat');
+    if (chat) {
+      const container = document.createElement('div');
+      container.className = 'message-container aviso';
+      container.innerHTML = `
+        <div class="message aviso" style="color:#c0392b;font-weight:bold;font-size:12px;padding:5px 9px;max-width:85%;">
+          🚪 <b>${data.from} ${data.fromSymbol}</b> ha abandonado la partida de <b>${data.game || 'juego'}</b>. Partida finalizada.
+        </div>
+      `;
+      chat.appendChild(container);
+      chat.scrollTop = chat.scrollHeight;
     }
   }
 
@@ -574,28 +816,30 @@
     let typingTimeout = null;
     inputElem.addEventListener('input', () => {
       if (!activeConn || !activeConn.open) return;
-      activeConn.send({ type: 'typing', isTyping: true });
-      clearTimeout(typingTimeout);
-      typingTimeout = setTimeout(() => {
-        if (activeConn && activeConn.open) {
-          activeConn.send({ type: 'typing', isTyping: false });
-        }
-      }, 1400);
+      try {
+        activeConn.send({ type: 'typing', isTyping: true });
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+          if (activeConn && activeConn.open) {
+            activeConn.send({ type: 'typing', isTyping: false });
+          }
+        }, 1400);
+      } catch (e) {}
     });
   }
-
-  // El botón de Zumbido se gestiona directamente desde zumbido() en index.html llamando a window.sendLiveBuzz()
 
   // Interceptar botones de vídeos
   const pigBtn = document.getElementById('pig');
   if (pigBtn) {
     pigBtn.addEventListener('click', () => {
       if (activeConn && activeConn.open) {
-        activeConn.send({
-          type: 'video_overlay',
-          src: './resources/msn-pig-dance.mp4',
-          duration: 10
-        });
+        try {
+          activeConn.send({
+            type: 'video_overlay',
+            src: './resources/msn-pig-dance.mp4',
+            duration: 10
+          });
+        } catch (e) {}
       }
     }, true);
   }
@@ -604,23 +848,42 @@
   if (angryBtn) {
     angryBtn.addEventListener('click', () => {
       if (activeConn && activeConn.open) {
-        activeConn.send({
-          type: 'video_overlay',
-          src: './resources/msn-guitarra.mp4',
-          duration: 9
-        });
+        try {
+          activeConn.send({
+            type: 'video_overlay',
+            src: './resources/msn-guitarra.mp4',
+            duration: 9
+          });
+        } catch (e) {}
       }
     }, true);
   }
 
   window.sendLiveTicTacToeMove = function (cellIndex) {
     if (activeConn && activeConn.open) {
-      activeConn.send({
-        type: 'ttt_move',
-        index: cellIndex
-      });
+      try {
+        activeConn.send({
+          type: 'ttt_move',
+          index: cellIndex
+        });
+      } catch (e) {}
     }
   };
+
+  // Reconectar automáticamente si se cambia de pestaña, se recupera la red o se desbloquea el móvil
+  window.addEventListener('online', () => {
+    console.log('Red detectada online. Reanudando P2P...');
+    initP2P();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      if (!activeConn || !activeConn.open) {
+        console.log('App recuperada en primer plano. Verificando conexión P2P...');
+        initP2P();
+      }
+    }
+  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initP2P);

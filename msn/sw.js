@@ -1,5 +1,5 @@
-// Service Worker v8 - Invitaciones a Juegos MSN Retro y Modo Live
-const CACHE_NAME = 'msn-pinchi-v8';
+// Service Worker v20 - Detección estricta de clic de cierre y abandono de juego en vivo
+const CACHE_NAME = 'msn-pinchi-v20';
 
 const CORE_ASSETS = [
   './',
@@ -154,6 +154,11 @@ self.addEventListener('fetch', event => {
 
   // Ignorar métodos no GET o extensiones del navegador
   if (request.method !== 'GET' || !request.url.startsWith('http')) {
+    return;
+  }
+
+  // CRÍTICO: Las peticiones de señalización P2P de PeerJS NUNCA deben ser cacheadas
+  if (url.hostname.includes('peerjs.com') || url.pathname.includes('/peerjs/')) {
     return;
   }
 

@@ -2,8 +2,49 @@
 // MSN GAMES - RETO DE MEMORIA (MODO INDIVIDUAL & MODO REAL EN VIVO P2P 🐧 vs 🐷)
 // =============================================================================
 
+// Catálogo completo de fotos de pareja y recuerdos
+const MEMORY_ALL_ITEMS = [
+  { id: 'simba', img: './resources/simba.webp', name: 'Simba' },
+  { id: 'manolo', img: './resources/manolo.jpg', name: 'Manolo y Benito' },
+  { id: 'serrano', img: './resources/serrano.jpeg', name: 'Los Serrano' },
+  { id: 'oompa', img: './resources/Oompa_Loompa.webp', name: 'Oompa Loompa' },
+  { id: 'chispitas', img: './resources/chispitas.webp', name: 'Chispitas' },
+  { id: 'chimpi1', img: './resources/chimpi_1.png', name: 'Chimpi Pequeño' },
+  { id: 'pinchi1', img: './resources/pinchi_1.png', name: 'Pinchi Pequeña' },
+  { id: 'chimpi2', img: './resources/chimpi_2.jpg', name: 'Chimpi Viajero' },
+  { id: 'pinchi2', img: './resources/pinchi_2.jpg', name: 'Pinchi Viajera' },
+  { id: 'chimpi3', img: './resources/chimpi_3.png', name: 'Chimpi Guapo' },
+  { id: 'pinchi3', img: './resources/pinchi_3.jpg', name: 'Pinchi Guapa' },
+  { id: 'chimpi_real', img: './resources/chimpi.jpg', name: 'Chimpi' },
+  { id: 'pinchi_real', img: './resources/pinchi.jpg', name: 'Pinchi' },
+  { id: 'principe', img: './resources/principe_bel.jpg', name: 'Príncipe Bel-Air' },
+  { id: 'dani', img: './resources/dani_martinez.jpg', name: 'Dani Martínez' },
+  { id: 'pereza', img: './resources/pereza.jpg', name: 'Pereza' },
+  { id: 'spice', img: './resources/spice-girls.jpg', name: 'Spice Girls' }
+];
+
+// Generador unificado de baraja de 12 cartas (6 parejas idénticas)
+window.generateMemoryDeckIds = function () {
+  const shuffledPool = [...MEMORY_ALL_ITEMS].sort(() => Math.random() - 0.5);
+  const selected6 = shuffledPool.slice(0, 6);
+  const deck12 = [...selected6, ...selected6].sort(() => Math.random() - 0.5);
+  return deck12.map(item => item.id);
+};
+
+// Reiniciar duelo sincronizando a ambos jugadores en vivo
+window.restartLiveMemoryGame = function () {
+  const isLive = !!(window._liveConnection && window._liveConnection.open);
+  const newDeckIds = window.generateMemoryDeckIds();
+  const startingTurn = '🐧';
+
+  if (isLive && typeof window.sendLiveMemoryInit === 'function') {
+    window.sendLiveMemoryInit(newDeckIds, startingTurn);
+  }
+  openMemoryGame(newDeckIds, startingTurn, false);
+};
+
 function openMemoryGame(syncDeckIds, startingTurn, isRemoteLaunch) {
-  closeGameModal();
+  closeGameModal(true);
 
   var modal = window.gameModal || document.getElementById('gameModal');
   var title = window.gameTitle || document.getElementById('gameTitle');
@@ -18,42 +59,21 @@ function openMemoryGame(syncDeckIds, startingTurn, isRemoteLaunch) {
   const opponentSymbol = isChimpi ? '🐧' : '🐷';
   const opponentName = isChimpi ? 'Pinchi' : 'Chimpi';
 
-  // Catálogo completo de fotos de pareja y recuerdos
-  const allAvailableItems = [
-    { id: 'simba', img: './resources/simba.webp', name: 'Simba' },
-    { id: 'manolo', img: './resources/manolo.jpg', name: 'Manolo y Benito' },
-    { id: 'serrano', img: './resources/serrano.jpeg', name: 'Los Serrano' },
-    { id: 'oompa', img: './resources/Oompa_Loompa.webp', name: 'Oompa Loompa' },
-    { id: 'chispitas', img: './resources/chispitas.webp', name: 'Chispitas' },
-    { id: 'chimpi1', img: './resources/chimpi_1.png', name: 'Chimpi Pequeño' },
-    { id: 'pinchi1', img: './resources/pinchi_1.png', name: 'Pinchi Pequeña' },
-    { id: 'chimpi2', img: './resources/chimpi_2.jpg', name: 'Chimpi Viajero' },
-    { id: 'pinchi2', img: './resources/pinchi_2.jpg', name: 'Pinchi Viajera' },
-    { id: 'chimpi3', img: './resources/chimpi_3.png', name: 'Chimpi Guapo' },
-    { id: 'pinchi3', img: './resources/pinchi_3.jpg', name: 'Pinchi Guapa' },
-    { id: 'chimpi_real', img: './resources/chimpi.jpg', name: 'Chimpi' },
-    { id: 'pinchi_real', img: './resources/pinchi.jpg', name: 'Pinchi' },
-    { id: 'principe', img: './resources/principe_bel.jpg', name: 'Príncipe Bel-Air' },
-    { id: 'dani', img: './resources/dani_martinez.jpg', name: 'Dani Martínez' },
-    { id: 'pereza', img: './resources/pereza.jpg', name: 'Pereza' },
-    { id: 'spice', img: './resources/spice-girls.jpg', name: 'Spice Girls' }
-  ];
+  window._activeLiveGame = isLive ? 'Reto de Memoria' : null;
 
   let deck = [];
   let currentTurn = startingTurn || '🐧'; // Pinchi siempre comienza de anfitriona
 
   if (Array.isArray(syncDeckIds) && syncDeckIds.length === 12) {
     // Baraja sincronizada enviada por la otra persona vía WebRTC
-    deck = syncDeckIds.map(id => allAvailableItems.find(item => item.id === id) || allAvailableItems[0]);
+    deck = syncDeckIds.map(id => MEMORY_ALL_ITEMS.find(item => item.id === id) || MEMORY_ALL_ITEMS[0]);
   } else {
-    // Generar baraja aleatoria de 6 parejas
-    const shuffledPool = [...allAvailableItems].sort(() => Math.random() - 0.5);
-    const selected6 = shuffledPool.slice(0, 6);
-    deck = [...selected6, ...selected6].sort(() => Math.random() - 0.5);
+    // Generar baraja sincronizable de 6 parejas
+    const deckIds = window.generateMemoryDeckIds();
+    deck = deckIds.map(id => MEMORY_ALL_ITEMS.find(item => item.id === id) || MEMORY_ALL_ITEMS[0]);
 
     // Si estamos en vivo y la partida se inicia localmente, sincronizar la baraja con la otra persona
     if (isLive && !isRemoteLaunch && typeof window.sendLiveMemoryInit === 'function') {
-      const deckIds = deck.map(item => item.id);
       window.sendLiveMemoryInit(deckIds, currentTurn);
     }
   }
@@ -82,7 +102,7 @@ function openMemoryGame(syncDeckIds, startingTurn, isRemoteLaunch) {
         <div class="memory-grid" id="memoryGrid"></div>
         <div id="memStatus" style="font-size:12px;color:#666;min-height:20px;">¡A ver quién tiene mejor memoria! 💖</div>
         <div style="display:flex;gap:8px;justify-content:center;margin-top:6px;">
-          <button class="msn-game-launch-btn" style="padding:4px 12px;font-size:12px;" onclick="openMemoryGame()">Reiniciar Duelo 🔄</button>
+          <button class="msn-game-launch-btn" style="padding:4px 12px;font-size:12px;" onclick="window.restartLiveMemoryGame()">Reiniciar Duelo 🔄</button>
           ${hubBackBtnHtml()}
         </div>
       `;
@@ -116,12 +136,12 @@ function openMemoryGame(syncDeckIds, startingTurn, isRemoteLaunch) {
       turnElem.style.background = '#e6f9ef';
       turnElem.style.color = '#2e8b57';
       turnElem.style.border = '1.5px solid #5fcf91';
-      turnElem.innerHTML = `✨ <b>¡Tu turno, ${myName}!</b> Toca 2 cartas ${mySymbol}`;
+      turnElem.innerHTML = `✨ <b>¡Tu turno, ${myName}!</b> (Sigue jugando mientras aciertes 🎯)`;
     } else {
       turnElem.style.background = '#f0f4f8';
       turnElem.style.color = '#555';
       turnElem.style.border = '1px solid #ccc';
-      turnElem.innerHTML = `⏳ <b>Turno de ${opponentName} ${opponentSymbol}</b> (Observando su jugada...)`;
+      turnElem.innerHTML = `⏳ <b>Turno de ${opponentName} ${opponentSymbol}</b> (Sigue en su turno...)`;
     }
   }
 
@@ -174,37 +194,41 @@ function openMemoryGame(syncDeckIds, startingTurn, isRemoteLaunch) {
           if (currentTurn === '🐧') {
             card1.style.borderColor = '#0078d7';
             card2.style.borderColor = '#0078d7';
-            card1.style.boxShadow = '0 0 8px rgba(0,120,215,0.7)';
-            card2.style.boxShadow = '0 0 8px rgba(0,120,215,0.7)';
+            card1.style.boxShadow = '0 0 10px rgba(0,120,215,0.8)';
+            card2.style.boxShadow = '0 0 10px rgba(0,120,215,0.8)';
           } else {
             card1.style.borderColor = '#e83e8c';
             card2.style.borderColor = '#e83e8c';
-            card1.style.boxShadow = '0 0 8px rgba(232,62,140,0.7)';
-            card2.style.boxShadow = '0 0 8px rgba(232,62,140,0.7)';
+            card1.style.boxShadow = '0 0 10px rgba(232,62,140,0.8)';
+            card2.style.boxShadow = '0 0 10px rgba(232,62,140,0.8)';
           }
 
           if (scorePinchiElem) scorePinchiElem.textContent = scores['🐧'];
           if (scoreChimpiElem) scoreChimpiElem.textContent = scores['🐷'];
 
-          playRetroTone(650, 'triangle', 0.18);
-          if (navigator.vibrate) try { navigator.vibrate(70); } catch (err) {}
+          playRetroTone(650, 'triangle', 0.2);
+          if (navigator.vibrate) try { navigator.vibrate(80); } catch (err) {}
 
           const pointPlayer = currentTurn === '🐧' ? 'Pinchi 🐧' : 'Chimpi 🐷';
           if (statusElem) {
-            statusElem.innerHTML = `¡Punto para <b>${pointPlayer}</b>! 🎉 Encontró: <i>${cardData.name}</i> (¡Repite turno!)`;
+            statusElem.innerHTML = `🎉 ¡Punto para <b>${pointPlayer}</b>! (${cardData.name}) — <b>¡SIGUE SU TURNO! 🎯</b>`;
           }
 
           matchedCount++;
-          flippedCards = [];
-          lockBoard = false;
 
-          // ¿Se han completado las 6 parejas en vivo?
-          if (matchedCount === 6) {
-            handleLiveGameEnd();
-          } else {
-            // El jugador que acierta repite turno
-            updateTurnUI();
-          }
+          // Breve pausa para apreciar la pareja encontrada antes de que el mismo jugador continúe
+          setTimeout(() => {
+            flippedCards = [];
+            lockBoard = false;
+
+            // ¿Se han completado las 6 parejas en vivo?
+            if (matchedCount === 6) {
+              handleLiveGameEnd();
+            } else {
+              // CRÍTICO: El jugador que acierta repite turno y NO se cambia
+              updateTurnUI();
+            }
+          }, 500);
         } else {
           // Modo Individual Offline
           matchedCount++;
@@ -230,7 +254,7 @@ function openMemoryGame(syncDeckIds, startingTurn, isRemoteLaunch) {
           }
         }
       } else {
-        // NO COINCIDEN
+        // NO COINCIDEN (FALLO -> CAMBIO DE TURNO TRAS 1.1s)
         playRetroTone(250, 'sine', 0.1);
         if (statusElem) {
           statusElem.textContent = isLive ? `No coinciden... memorizando fotos 🤔` : 'Casi... ¡sigue buscando! 🧐';
@@ -245,7 +269,7 @@ function openMemoryGame(syncDeckIds, startingTurn, isRemoteLaunch) {
           lockBoard = false;
 
           if (isLive) {
-            // Cambio de turno en duelo en vivo
+            // El turno cambia ÚNICAMENTE cuando se falla la pareja
             currentTurn = (currentTurn === '🐧') ? '🐷' : '🐧';
             updateTurnUI();
             if (statusElem) {
@@ -259,9 +283,12 @@ function openMemoryGame(syncDeckIds, startingTurn, isRemoteLaunch) {
   }
 
   function handleLiveGameEnd() {
+    window._activeLiveGame = null;
     if (turnElem) turnElem.style.display = 'none';
     const pScore = scores['🐧'];
     const cScore = scores['🐷'];
+    const isChimpi = !!window._isChimpiMode;
+    const localWon = (isChimpi && cScore > pScore) || (!isChimpi && pScore > cScore);
 
     if (pScore > cScore) {
       if (statusElem) {
@@ -274,8 +301,12 @@ function openMemoryGame(syncDeckIds, startingTurn, isRemoteLaunch) {
           </div>
         `;
       }
-      if (navigator.vibrate) try { navigator.vibrate([100, 50, 100, 50, 300]); } catch (e) {}
-      if (typeof lanzarConfetiVariasVeces === 'function') lanzarConfetiVariasVeces();
+      if (localWon) {
+        if (navigator.vibrate) try { navigator.vibrate([100, 50, 100, 50, 300]); } catch (e) {}
+        if (typeof lanzarConfetiVariasVeces === 'function') lanzarConfetiVariasVeces();
+      } else {
+        playRetroTone(220, 'sine', 0.25);
+      }
     } else if (cScore > pScore) {
       if (statusElem) {
         statusElem.innerHTML = `
@@ -283,11 +314,16 @@ function openMemoryGame(syncDeckIds, startingTurn, isRemoteLaunch) {
             ¡HA GANADO CHIMPI! 🐷🏆 (${cScore} a ${pScore})
           </div>
           <div style="font-size:13px;color:#ff8c00;font-style:italic;">
-            Chimpi: ¡Oink! El cerdito ha tenido suerte hoy... ¡pero tú tienes mi corazón! 🥰
+            Chimpi: ¡Oinss Oinss! El cerdito ha tenido suerte hoy... ¡pero tú tienes mi corazón! 🥰
           </div>
         `;
       }
-      if (typeof lanzarConfetiVariasVeces === 'function') lanzarConfetiVariasVeces();
+      if (localWon) {
+        if (navigator.vibrate) try { navigator.vibrate([100, 50, 100, 50, 300]); } catch (e) {}
+        if (typeof lanzarConfetiVariasVeces === 'function') lanzarConfetiVariasVeces();
+      } else {
+        playRetroTone(220, 'sine', 0.25);
+      }
     } else {
       if (statusElem) {
         statusElem.innerHTML = `

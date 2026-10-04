@@ -3,7 +3,7 @@
 // ==========================================
 
 function openTicTacToeGame() {
-  closeGameModal();
+  closeGameModal(true);
 
   var modal = window.gameModal || document.getElementById('gameModal');
   var title = window.gameTitle || document.getElementById('gameTitle');
@@ -13,6 +13,7 @@ function openTicTacToeGame() {
 
   const isLive = window._liveConnection && window._liveConnection.open;
   const isChimpi = window._isChimpiMode;
+  window._activeLiveGame = isLive ? 'Tres en Raya' : null;
 
   let currentTurn = '🐧'; // Pinchi siempre empieza
 
@@ -35,7 +36,7 @@ function openTicTacToeGame() {
         <div class="ttt-cell" data-idx="8"></div>
       </div>
       <div id="tttComment" style="font-size:13px;color:#ff8c00;font-style:italic;min-height:24px;">
-        ${isLive ? '¡Jugando en vivo el uno contra el otro!' : 'Chimpi: ¡A ver si me ganas! Oink 😏🐷'}
+        ${isLive ? '¡Jugando en vivo el uno contra el otro!' : 'Chimpi: ¡A ver si me ganas! Oinss 😏🐷'}
       </div>
       <button class="msn-game-launch-btn" style="padding:6px 14px;font-size:13px;" onclick="openTicTacToeGame()">Reiniciar Partida 🔄</button>
       ${hubBackBtnHtml()}
@@ -52,7 +53,7 @@ function openTicTacToeGame() {
 
   const chimpiComments = [
     "Oye, ¡esa jugada no me la esperaba! 🐷",
-    "No me bloquees que te veo venir... oink!",
+    "No me bloquees que te veo venir... oinss!",
     "¡Pensabas que el cerdito no se iba a dar cuenta! 🤭",
     "Hummm... déjame calcular mi jugada porcina maestra..."
   ];
@@ -153,15 +154,25 @@ function openTicTacToeGame() {
   }
 
   function endGame(winner) {
+    window._activeLiveGame = null;
     gameActive = false;
+    const isChimpiMode = !!window._isChimpiMode;
+    const localWon = (isChimpiMode && winner === '🐷') || (!isChimpiMode && winner === '🐧');
+
     if (winner === '🐧') {
       if (turnElem) turnElem.innerHTML = '<b style="color:#2e8b57;font-size:16px;">¡HAS GANADO PINCHI! 🎉🐧</b>';
       if (commentElem) commentElem.textContent = 'Chimpi: ¡Eres una máquina! Has vencido al cerdito 🐷💖';
-      if (navigator.vibrate) try { navigator.vibrate([100, 50, 100, 50, 200]); } catch (e) {}
-      if (typeof lanzarConfetiVariasVeces === 'function') lanzarConfetiVariasVeces();
+      if (localWon) {
+        if (navigator.vibrate) try { navigator.vibrate([100, 50, 100, 50, 200]); } catch (e) {}
+        if (typeof lanzarConfetiVariasVeces === 'function') lanzarConfetiVariasVeces();
+      }
     } else if (winner === '🐷') {
       if (turnElem) turnElem.innerHTML = '<b style="color:#e81123;">¡Punto para Chimpi el Cerdito! 🤭🐷</b>';
-      if (commentElem) commentElem.textContent = 'Chimpi: ¡Oink oink! Aunque sabes que te quiero con locura 😜💖';
+      if (commentElem) commentElem.textContent = 'Chimpi: ¡Oinss Oinss! Aunque sabes que te quiero con locura 😜💖';
+      if (localWon) {
+        if (navigator.vibrate) try { navigator.vibrate([100, 50, 100, 50, 200]); } catch (e) {}
+        if (typeof lanzarConfetiVariasVeces === 'function') lanzarConfetiVariasVeces();
+      }
     } else {
       if (turnElem) turnElem.innerHTML = '<b style="color:#0078d7;">¡Empate épico! 🤝</b>';
       if (commentElem) commentElem.textContent = 'Chimpi: ¡Un empate digno de MSN Messenger!';
