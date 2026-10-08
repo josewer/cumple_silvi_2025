@@ -1,5 +1,5 @@
-// Service Worker v22 - Corrección de apertura de modal y conexión WebRTC en Hundir la Flota
-const CACHE_NAME = 'msn-pinchi-v22';
+// Service Worker v23 - Optimización WebRTC P2P (servidores TURN, reconexión móvil y liveness)
+const CACHE_NAME = 'msn-pinchi-v23';
 
 const CORE_ASSETS = [
   './',

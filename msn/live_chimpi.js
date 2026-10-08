@@ -117,7 +117,7 @@
         banner.style.background = '#ffc107';
         banner.style.color = '#212529';
         banner.innerHTML = `
-          <span>⏳ <b>MODO CHIMPI:</b> Conectando con el móvil de Pinchi...</span>
+          <span>⏳ <b>MODO CHIMPI:</b> Conectando con Pinchi... (Asegúrate de que tenga la web abierta en su móvil)</span>
           <button id="reconnectChimpiBtn" style="background:#212529;color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;margin-left:6px;">
             🔄 Forzar Reconexión
           </button>
@@ -180,7 +180,24 @@
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' }
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun.cloudflare.com:3478' },
+        { urls: 'stun:stun.relay.metered.ca:80' },
+        {
+          urls: 'turn:standard.relay.metered.ca:80',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        },
+        {
+          urls: 'turn:standard.relay.metered.ca:443',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        },
+        {
+          urls: 'turn:standard.relay.metered.ca:443?transport=tcp',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        }
       ]
     }
   };
@@ -207,13 +224,23 @@
     }
   });
 
+  let pinchiRetryTimeout = null;
+
   // --- MODO PINCHI (ESCUCHA CONEXIÓN) ---
   function setupPinchiMode() {
+    clearTimeout(pinchiRetryTimeout);
+
     if (peer && !peer.destroyed) {
       try { peer.destroy(); } catch (e) {}
     }
 
-    peer = new Peer(PINCHI_PEER_ID, PEER_CONFIG);
+    try {
+      peer = new Peer(PINCHI_PEER_ID, PEER_CONFIG);
+    } catch (e) {
+      console.warn('Pinchi: Error al instanciar Peer:', e);
+      pinchiRetryTimeout = setTimeout(setupPinchiMode, 3000);
+      return;
+    }
 
     peer.on('open', (id) => {
       console.log('Pinchi lista para recibir a Chimpi. ID:', id);
@@ -241,10 +268,10 @@
 
       conn.on('close', () => {
         console.log('Pinchi: Conexión con Chimpi cerrada.');
-        updateLiveUI('disconnected', false);
         if (activeConn === conn) {
           activeConn = null;
           window._liveConnection = null;
+          updateLiveUI('disconnected', false);
         }
       });
 
@@ -256,33 +283,56 @@
     peer.on('error', (err) => {
       console.warn('Pinchi Peer error:', err.type, err);
       if (err.type === 'unavailable-id') {
-        console.log('ID temporalmente retenida en servidor. Reintentando en 2.5s...');
-        setTimeout(() => {
+        console.log('ID temporalmente retenida en servidor. Reintentando en 3s...');
+        clearTimeout(pinchiRetryTimeout);
+        pinchiRetryTimeout = setTimeout(() => {
           if (!activeConn || !activeConn.open) {
             setupPinchiMode();
           }
-        }, 2500);
+        }, 3000);
       } else if (err.type === 'disconnected' || err.type === 'network') {
-        try { peer.reconnect(); } catch (e) {}
+        if (peer && !peer.destroyed) {
+          try { peer.reconnect(); } catch (e) {}
+        }
       }
     });
 
     peer.on('disconnected', () => {
       console.log('Pinchi Peer desconectado del servidor. Intentando reconectar...');
-      try { peer.reconnect(); } catch (e) {}
+      if (peer && !peer.destroyed) {
+        try { peer.reconnect(); } catch (e) {}
+      } else {
+        setupPinchiMode();
+      }
     });
   }
 
   // --- MODO CHIMPI (CONECTA A PINCHI) ---
+  let pendingConn = null;
+  let isConnecting = false;
+  let chimpiReconnectTimeout = null;
+
   function setupChimpiMode() {
     updateLiveUI('waiting', false);
     adaptUIToChimpi();
+
+    if (pendingConn && !pendingConn.open) {
+      try { pendingConn.close(); } catch (e) {}
+      pendingConn = null;
+    }
 
     if (peer && !peer.destroyed) {
       try { peer.destroy(); } catch (e) {}
     }
 
-    peer = new Peer(PEER_CONFIG);
+    try {
+      peer = new Peer(PEER_CONFIG);
+    } catch (e) {
+      console.warn('Chimpi: Error al instanciar Peer:', e);
+      clearTimeout(chimpiReconnectTimeout);
+      chimpiReconnectTimeout = setTimeout(setupChimpiMode, 3000);
+      return;
+    }
 
     peer.on('open', (id) => {
       console.log('Chimpi Peer abierto. ID propia:', id);
@@ -294,35 +344,60 @@
       isConnecting = false;
       if (err.type === 'peer-unavailable') {
         updateLiveUI('waiting', false);
+      } else if (err.type === 'network' || err.type === 'disconnected') {
+        if (peer && !peer.destroyed) {
+          try { peer.reconnect(); } catch (e) {}
+        }
       }
     });
 
     peer.on('disconnected', () => {
-      try { peer.reconnect(); } catch (e) {}
+      if (peer && !peer.destroyed) {
+        try { peer.reconnect(); } catch (e) {}
+      }
     });
 
-    let isConnecting = false;
-
     function connectToPinchi() {
-      if (isConnecting || (activeConn && activeConn.open)) return;
-      if (!peer || peer.destroyed || !peer.open) return;
+      if (activeConn && activeConn.open) return;
+      if (isConnecting) return;
+      if (!peer || peer.destroyed) {
+        setupChimpiMode();
+        return;
+      }
+      if (peer.disconnected) {
+        try { peer.reconnect(); } catch (e) {}
+        return;
+      }
+      if (!peer.open) return;
+
+      // Descartar conexión pendiente anterior si no llegó a abrirse
+      if (pendingConn && !pendingConn.open) {
+        try { pendingConn.close(); } catch (e) {}
+        pendingConn = null;
+      }
 
       isConnecting = true;
       const connectTimeout = setTimeout(() => {
         isConnecting = false;
-      }, 4000);
+        if (pendingConn && !pendingConn.open) {
+          try { pendingConn.close(); } catch (e) {}
+          pendingConn = null;
+        }
+      }, 5000);
 
       console.log('Chimpi intentando conectar a Pinchi...');
       try {
         const conn = peer.connect(PINCHI_PEER_ID, {
           reliable: true
         });
+        pendingConn = conn;
 
         setupConnectionDataHandlers(conn);
 
         conn.on('open', () => {
           clearTimeout(connectTimeout);
           isConnecting = false;
+          pendingConn = null;
           console.log('¡Chimpi conectado con éxito a Pinchi!');
           activeConn = conn;
           window._liveConnection = conn;
@@ -332,22 +407,25 @@
         conn.on('close', () => {
           clearTimeout(connectTimeout);
           isConnecting = false;
+          if (pendingConn === conn) pendingConn = null;
           console.log('Conexión con Pinchi cerrada.');
-          updateLiveUI('disconnected', false);
           if (activeConn === conn) {
             activeConn = null;
             window._liveConnection = null;
+            updateLiveUI('disconnected', false);
           }
         });
 
         conn.on('error', (err) => {
           clearTimeout(connectTimeout);
           isConnecting = false;
+          if (pendingConn === conn) pendingConn = null;
           console.warn('Error en conexión con Pinchi:', err);
         });
       } catch (e) {
         clearTimeout(connectTimeout);
         isConnecting = false;
+        pendingConn = null;
         console.warn('Excepción al conectar con Pinchi:', e);
       }
     }
@@ -357,7 +435,7 @@
       if (!activeConn || !activeConn.open) {
         connectToPinchi();
       }
-    }, 3000);
+    }, 3500);
   }
 
   function adaptUIToChimpi() {
@@ -383,20 +461,46 @@
 
   // Manejo de datos WebRTC
   function setupConnectionDataHandlers(conn) {
-    // Heartbeat periódico para evitar que conexiones móviles se congelen
+    let lastDataReceived = Date.now();
+
+    // Heartbeat periódico bidireccional (ping/pong) para mantener vivo el canal y detectar zombis
     if (heartbeatInterval) clearInterval(heartbeatInterval);
     heartbeatInterval = setInterval(() => {
       if (conn && conn.open) {
         try { conn.send({ type: 'ping' }); } catch (e) {}
+
+        // Si pasan más de 18 segundos sin recibir ningún dato ni pong del rival, cerrar canal zombi
+        if (Date.now() - lastDataReceived > 18000) {
+          console.warn('P2P Heartbeat timeout (>18s sin respuesta). Cerrando canal zombi...');
+          try { conn.close(); } catch (e) {}
+        }
       }
-    }, 6000);
+    }, 5000);
+
+    // Monitoreo de estado ICE de WebRTC si está disponible
+    if (conn.peerConnection) {
+      try {
+        conn.peerConnection.addEventListener('iceconnectionstatechange', () => {
+          const state = conn.peerConnection ? conn.peerConnection.iceConnectionState : null;
+          if (state === 'failed') {
+            console.warn('ICE WebRTC failed. Cerrando conexión para reintento...');
+            try { conn.close(); } catch (e) {}
+          }
+        });
+      } catch (e) {}
+    }
 
     conn.on('data', (data) => {
       if (!data || typeof data !== 'object') return;
+      lastDataReceived = Date.now();
 
       switch (data.type) {
         case 'ping':
-          // Mantener vivo el canal
+          try { conn.send({ type: 'pong' }); } catch (e) {}
+          break;
+
+        case 'pong':
+          // Canal confirmado como activo
           break;
 
         case 'chat':
@@ -498,9 +602,11 @@
           chat.scrollTop = chat.scrollHeight;
         }
       }
-      updateLiveUI('closed', false);
-      activeConn = null;
-      window._liveConnection = null;
+      if (activeConn === conn) {
+        updateLiveUI('closed', false);
+        activeConn = null;
+        window._liveConnection = null;
+      }
       if (heartbeatInterval) clearInterval(heartbeatInterval);
     });
   }
@@ -910,17 +1016,38 @@
   };
 
   // Reconectar automáticamente si se cambia de pestaña, se recupera la red o se desbloquea el móvil
+  function handleDeviceWakeup() {
+    console.log('Dispositivo activo o en primer plano. Verificando estado P2P...');
+    if (!peer || peer.destroyed) {
+      initP2P();
+      return;
+    }
+    if (peer.disconnected) {
+      try { peer.reconnect(); } catch (e) {}
+    }
+    if (!activeConn || !activeConn.open) {
+      if (isChimpiMode) {
+        initP2P();
+      } else {
+        if (!peer.open && !peer.destroyed) {
+          try { peer.reconnect(); } catch (e) {}
+        }
+      }
+    }
+  }
+
   window.addEventListener('online', () => {
     console.log('Red detectada online. Reanudando P2P...');
-    initP2P();
+    handleDeviceWakeup();
+  });
+
+  window.addEventListener('focus', () => {
+    handleDeviceWakeup();
   });
 
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
-      if (!activeConn || !activeConn.open) {
-        console.log('App recuperada en primer plano. Verificando conexión P2P...');
-        initP2P();
-      }
+      handleDeviceWakeup();
     }
   });
 
