@@ -96,7 +96,7 @@
         banner.style.background = '#ffc107';
         banner.style.color = '#212529';
         banner.innerHTML = `
-          <span>⏳ <b>MODO CHIMPI:</b> Conectando con Pinchi... (Asegúrate de que tenga la web abierta en su móvil)</span>
+          <span>⏳ <b>MODO CHIMPI:</b> Conectando con Pinchi... <small style="opacity:0.6;font-size:9px;">(v41)</small></span>
           <button id="reconnectChimpiBtn" style="background:#212529;color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;margin-left:6px;">
             🔄 Forzar Reconexión
           </button>
@@ -117,7 +117,7 @@
         banner.style.borderBottom = '1.5px solid #70a1ff';
         banner.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:2px 0;">
-            <span>✨ <b>¡Chimpi está en directo contigo! 🐷💖</b></span>
+            <span>✨ <b>¡Chimpi está en directo contigo! 🐷💖</b> <small style="opacity:0.6;font-size:9px;">(v41)</small></span>
           </div>
         `;
 
@@ -131,7 +131,7 @@
         banner.style.borderBottom = '1px solid #c8e6c9';
         banner.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:2px 4px;font-size:11px;">
-            <span>🟢 <b>Red P2P lista:</b> Esperando a Chimpi (🐷)</span>
+            <span>🟢 <b>Red P2P lista:</b> Esperando a Chimpi (🐷) <small style="opacity:0.6;font-size:9px;">(v41)</small></span>
             <button id="reconPinchiBtn" style="background:#fff;border:1px solid #a5d6a7;border-radius:3px;padding:2px 8px;font-size:10px;cursor:pointer;color:#2e7d32;">🔄 Refrescar</button>
           </div>
         `;
@@ -147,7 +147,7 @@
         banner.style.borderBottom = '1px solid #ffeeba';
         banner.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:2px 4px;font-size:11px;">
-            <span>⚠️ <b>Reconectando señal P2P...</b></span>
+            <span>⚠️ <b>Reconectando señal P2P...</b> <small style="opacity:0.6;font-size:9px;">(v41)</small></span>
             <button id="reconPinchiBtn" style="background:#fff;border:1px solid #ffeeba;border-radius:3px;padding:2px 8px;font-size:10px;cursor:pointer;color:#856404;">🔄 Forzar</button>
           </div>
         `;
@@ -159,7 +159,7 @@
         banner.style.borderBottom = '1px solid #ffe082';
         banner.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:2px 4px;font-size:11px;">
-            <span>🟡 <b>Iniciando red P2P...</b></span>
+            <span>🟡 <b>Iniciando red P2P...</b> <small style="opacity:0.6;font-size:9px;">(v41)</small></span>
             <button id="reconPinchiBtn" style="background:#fff;border:1px solid #ffe082;border-radius:3px;padding:2px 8px;font-size:10px;cursor:pointer;color:#b78103;">🔄</button>
           </div>
         `;
@@ -195,12 +195,16 @@
     iceServersList.push({
       urls: [
         'turn:free.expressturn.com:3478',
-        'turn:free.expressturn.com:3478?transport=tcp'
+        'turn:free.expressturn.com:3478?transport=tcp',
+        'turn:free.expressturn.com:443',
+        'turn:free.expressturn.com:443?transport=tcp'
       ],
       username: turnUsername,
       credential: turnCredential
     });
   }
+
+  console.log('[MSN Live P2P v41] Servidores ICE configurados con STUN + ExpressTURN (puertos 3478 y 443).');
 
   const PEER_CONFIG = {
     debug: 1,
