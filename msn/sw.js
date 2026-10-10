@@ -1,5 +1,5 @@
-// Service Worker v43 - Catálogo de juegos optimizado (4 juegos ocultos) + Pizarra MSN con palabras simples
-const CACHE_NAME = 'msn-pinchi-v43';
+// Service Worker v44 - Diagnóstico en pantalla de señal P2P y catálogo de juegos
+const CACHE_NAME = 'msn-pinchi-v44';
 
 const CORE_ASSETS = [
   './',

@@ -41,8 +41,17 @@
     }
   }
 
+  const p2pLogs = [];
+  function recordP2PLog(msg) {
+    const time = new Date().toLocaleTimeString();
+    p2pLogs.push(`[${time}] ${msg}`);
+    if (p2pLogs.length > 25) p2pLogs.shift();
+  }
+  let lastPinchiError = '';
+
   // Crear o actualizar la barra de estado en directo en la parte superior
-  function updateLiveUI(status, isConnected) {
+  function updateLiveUI(status, isConnected, errorDetail) {
+    if (errorDetail) lastPinchiError = String(errorDetail);
     let banner = document.getElementById('liveStatusBanner');
     if (!banner) {
       banner = document.createElement('div');
@@ -96,7 +105,7 @@
         banner.style.background = '#ffc107';
         banner.style.color = '#212529';
         banner.innerHTML = `
-          <span>⏳ <b>MODO CHIMPI:</b> Conectando con Pinchi... <small style="opacity:0.6;font-size:9px;">(v42)</small></span>
+          <span>⏳ <b>MODO CHIMPI:</b> Conectando con Pinchi... <small style="opacity:0.6;font-size:9px;">(v44)</small></span>
           <button id="reconnectChimpiBtn" style="background:#212529;color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;margin-left:6px;">
             🔄 Forzar Reconexión
           </button>
@@ -117,7 +126,7 @@
         banner.style.borderBottom = '1.5px solid #70a1ff';
         banner.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:2px 0;">
-            <span>✨ <b>¡Chimpi está en directo contigo! 🐷💖</b> <small style="opacity:0.6;font-size:9px;">(v42)</small></span>
+            <span>✨ <b>¡Chimpi está en directo contigo! 🐷💖</b> <small style="opacity:0.6;font-size:9px;">(v44)</small></span>
           </div>
         `;
 
@@ -131,7 +140,7 @@
         banner.style.borderBottom = '1px solid #c8e6c9';
         banner.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:2px 4px;font-size:11px;">
-            <span>🟢 <b>Red P2P lista:</b> Esperando a Chimpi (🐷) <small style="opacity:0.6;font-size:9px;">(v42)</small></span>
+            <span>🟢 <b>Red P2P lista:</b> Esperando a Chimpi (🐷) <small style="opacity:0.6;font-size:9px;">(v44)</small></span>
             <button id="reconPinchiBtn" style="background:#fff;border:1px solid #a5d6a7;border-radius:3px;padding:2px 8px;font-size:10px;cursor:pointer;color:#2e7d32;">🔄 Refrescar</button>
           </div>
         `;
@@ -145,21 +154,58 @@
         banner.style.background = '#fff3cd';
         banner.style.color = '#856404';
         banner.style.borderBottom = '1px solid #ffeeba';
+
+        let errorTitle = 'Reconectando señal P2P...';
+        let errorHint = lastPinchiError || 'esperando respuesta del servidor';
+        if (lastPinchiError.includes('unavailable-id')) {
+          errorTitle = '⚠️ ID en uso: ¿otra pestaña o app abierta?';
+          errorHint = 'ID de Pinchi ocupada. Cierra otras pestañas/apps de Pinchi.';
+        } else if (lastPinchiError.includes('network')) {
+          errorTitle = '⚠️ Sin conexión con servidor PeerJS';
+          errorHint = 'Fallo de red o WebSocket no disponible.';
+        } else if (lastPinchiError.includes('socket-closed') || lastPinchiError.includes('disconnected')) {
+          errorTitle = '⚠️ Señal P2P desconectada';
+          errorHint = 'El socket con el servidor se cerró.';
+        } else if (lastPinchiError.includes('server-error')) {
+          errorTitle = '⚠️ Error en servidor PeerJS';
+          errorHint = 'El servidor de señalización no responde.';
+        }
+
         banner.innerHTML = `
-          <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:2px 4px;font-size:11px;">
-            <span>⚠️ <b>Reconectando señal P2P...</b> <small style="opacity:0.6;font-size:9px;">(v42)</small></span>
-            <button id="reconPinchiBtn" style="background:#fff;border:1px solid #ffeeba;border-radius:3px;padding:2px 8px;font-size:10px;cursor:pointer;color:#856404;">🔄 Forzar</button>
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:2px 4px;font-size:11px;flex-wrap:wrap;gap:4px;">
+            <div style="text-align:left;line-height:1.2;">
+              <span><b>${errorTitle}</b> <small style="opacity:0.6;font-size:9px;">(v44)</small></span>
+              <div style="font-size:10px;opacity:0.85;color:#664d03;">${errorHint}</div>
+            </div>
+            <div style="display:flex;gap:4px;align-items:center;">
+              <button id="infoPinchiBtn" style="background:#fff;border:1px solid #ffeeba;border-radius:3px;padding:2px 6px;font-size:10px;cursor:pointer;color:#856404;">ℹ️ Info</button>
+              <button id="reconPinchiBtn" style="background:#856404;color:#fff;border:none;border-radius:3px;padding:2px 8px;font-size:10px;cursor:pointer;font-weight:bold;">🔄 Forzar</button>
+            </div>
           </div>
         `;
+        const infoBtn = document.getElementById('infoPinchiBtn');
+        if (infoBtn) {
+          infoBtn.onclick = () => {
+            alert(`[DIAGNÓSTICO P2P v44]\nEstado: ${status}\nÚltimo error: ${lastPinchiError || 'Ninguno registrado'}\n\nHistorial reciente:\n${p2pLogs.slice(-6).join('\n') || 'Sin eventos'}`);
+          };
+        }
         const rBtn = document.getElementById('reconPinchiBtn');
-        if (rBtn) rBtn.onclick = () => initP2P();
+        if (rBtn) {
+          rBtn.onclick = () => {
+            recordP2PLog('Forzando reinicio manual de Pinchi...');
+            clearTimeout(pinchiRetryTimeout);
+            safeDestroyPeer(peer);
+            peer = null;
+            setTimeout(() => setupPinchiMode(), 300);
+          };
+        }
       } else {
         banner.style.background = '#fff8e1';
         banner.style.color = '#b78103';
         banner.style.borderBottom = '1px solid #ffe082';
         banner.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:2px 4px;font-size:11px;">
-            <span>🟡 <b>Iniciando red P2P...</b> <small style="opacity:0.6;font-size:9px;">(v42)</small></span>
+            <span>🟡 <b>Iniciando red P2P...</b> <small style="opacity:0.6;font-size:9px;">(v44)</small></span>
             <button id="reconPinchiBtn" style="background:#fff;border:1px solid #ffe082;border-radius:3px;padding:2px 8px;font-size:10px;cursor:pointer;color:#b78103;">🔄</button>
           </div>
         `;
@@ -204,7 +250,7 @@
     });
   }
 
-  console.log('[MSN Live P2P v42] Servidores ICE configurados con STUN + ExpressTURN (puertos 3478 y 443) y compatibilidad iOS Safari (json).');
+  console.log('[MSN Live P2P v44] Servidores ICE configurados con STUN + ExpressTURN (puertos 3478 y 443) y compatibilidad iOS Safari (json).');
 
   const PEER_CONFIG = {
     debug: 1,
@@ -256,6 +302,7 @@
     const delays = [3000, 6000, 10000, 15000];
     const delay = delays[Math.min(pinchiRetryCount, delays.length - 1)];
     pinchiRetryCount++;
+    recordP2PLog(`Reintento programado en ${delay / 1000}s (intento ${pinchiRetryCount})`);
     console.log(`Pinchi: reintentando registro P2P en ${delay / 1000}s (intento ${pinchiRetryCount})...`);
     pinchiRetryTimeout = setTimeout(() => {
       if (!activeConn || !activeConn.open) {
@@ -268,6 +315,7 @@
   function setupPinchiMode() {
     clearTimeout(pinchiRetryTimeout);
     updateLiveUI('connecting', false);
+    recordP2PLog('Iniciando registro de Pinchi con ID...');
 
     safeDestroyPeer(peer);
     peer = null;
@@ -277,7 +325,8 @@
       myPeer = new Peer(PINCHI_PEER_ID, PEER_CONFIG);
     } catch (e) {
       console.warn('Pinchi: Error al instanciar Peer:', e);
-      updateLiveUI('error', false);
+      recordP2PLog(`Fallo al instanciar Peer: ${e.message || e}`);
+      updateLiveUI('error', false, e.message || 'error-instancia');
       schedulePinchiRestart();
       return;
     }
@@ -289,6 +338,8 @@
     myPeer.on('open', (id) => {
       if (isStale()) return;
       pinchiRetryCount = 0;
+      lastPinchiError = '';
+      recordP2PLog(`Pinchi registrado OK (ID: ${id})`);
       console.log('Pinchi lista para recibir a Chimpi. ID:', id);
       updateLiveUI('waiting', false);
     });
@@ -299,6 +350,7 @@
         return;
       }
       conn.serialization = 'json';
+      recordP2PLog('Conexión entrante de Chimpi detectada');
       console.log('Pinchi: Conexión entrante de Chimpi detectada...');
       setupConnectionDataHandlers(conn);
 
@@ -313,6 +365,7 @@
           });
           pc.addEventListener('iceconnectionstatechange', () => {
             console.log(`[WebRTC ICE Pinchi]: ${pc.iceConnectionState}`);
+            recordP2PLog(`Estado ICE Pinchi: ${pc.iceConnectionState}`);
           });
         }
       };
@@ -320,6 +373,7 @@
       setTimeout(attachIceMonitor, 1000);
 
       const markReady = () => {
+        recordP2PLog('¡Canal P2P abierto con Chimpi!');
         console.log('Pinchi: ¡Canal P2P abierto y listo con Chimpi!');
         if (activeConn && activeConn !== conn) {
           try { activeConn.close(); } catch (e) {}
@@ -349,6 +403,7 @@
       setTimeout(() => clearInterval(pinchiCheckInterval), 15000);
 
       conn.on('close', () => {
+        recordP2PLog('Conexión con Chimpi cerrada');
         console.log('Pinchi: Conexión con Chimpi cerrada.');
         if (activeConn === conn) {
           activeConn = null;
@@ -358,25 +413,29 @@
       });
 
       conn.on('error', (err) => {
+        recordP2PLog(`Error en canal de conexión: ${err.type || err}`);
         console.warn('Pinchi: Error en conexión:', err);
       });
     });
 
     myPeer.on('error', (err) => {
       if (isStale()) return;
+      const errType = err ? (err.type || err.message || String(err)) : 'desconocido';
+      recordP2PLog(`Error Pinchi: ${errType}`);
       console.warn('Pinchi Peer error:', err.type, err);
       // Solo reiniciar el peer completo ante errores de servidor/red.
       // Errores sueltos de una conexión WebRTC (p. ej. 'webrtc') no deben tumbar el registro.
       if (PINCHI_RESTART_ERRORS.includes(err.type)) {
-        updateLiveUI('error', false);
+        updateLiveUI('error', false, errType);
         schedulePinchiRestart();
       }
     });
 
     myPeer.on('disconnected', () => {
       if (isStale()) return;
+      recordP2PLog('Pinchi desconectado del servidor de señalización');
       console.log('Pinchi Peer desconectado del servidor de señalización. Reconectando...');
-      updateLiveUI('error', false);
+      updateLiveUI('error', false, 'disconnected');
       // reconnect() conserva la misma ID; si falla, el handler de error programará un reinicio completo
       try { myPeer.reconnect(); } catch (e) { schedulePinchiRestart(); }
     });
