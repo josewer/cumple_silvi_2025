@@ -16,11 +16,23 @@
       : (window._liveConnection && window._liveConnection.open ? window._liveConnection : null);
   }
 
+  function isChimpi() {
+    return !!(window._isChimpiMode || (new URLSearchParams(window.location.search).get('rol') === 'chimpi') || (new URLSearchParams(window.location.search).get('chimpi') === '1'));
+  }
+
+  function getLocalPlayer() {
+    return isChimpi() ? 2 : 1;
+  }
+
+  function getRemotePlayer() {
+    return isChimpi() ? 1 : 2;
+  }
+
   function getTurnText(turn) {
     const isPinchi = turn === 1;
     let base = isPinchi ? '¡Turno de Pinchi! 🐧' : '¡Turno de Chimpi! 🐷';
     if (isLiveGame) {
-      const myPlayer = isChimpiRole ? 2 : 1;
+      const myPlayer = getLocalPlayer();
       if (turn === myPlayer) {
         base += ' (¡Te toca!)';
       } else {
@@ -41,7 +53,7 @@
 
     const conn = getConnection();
     isLiveGame = !forceSolo && !!conn;
-    isChimpiRole = !!window._isChimpiMode;
+    isChimpiRole = isChimpi();
     window._activeLiveGame = isLiveGame ? 'Conecta 4' : null;
 
     initBoard();
@@ -236,7 +248,7 @@
 
     // Validación de turno en modo P2P
     if (isLiveGame) {
-      const myPlayer = isChimpiRole ? 2 : 1;
+      const myPlayer = getLocalPlayer();
       if (currentTurn !== myPlayer) {
         showBanner('⏳ Espera el turno de tu rival...');
         return;
@@ -249,7 +261,7 @@
       return;
     }
 
-    const playerMoving = currentTurn;
+    const playerMoving = isLiveGame ? getLocalPlayer() : currentTurn;
 
     makeMove(col, playerMoving);
 
@@ -361,7 +373,8 @@
       const winnerName = player === 1 ? '¡Pinchi 🐧 ha ganado!' : '¡Chimpi 🐷 ha ganado!';
       updateTurnIndicator(`🏆 ${winnerName}`, '#28a745');
 
-      const isMe = (isLiveGame && ((player === 1 && !isChimpiRole) || (player === 2 && isChimpiRole))) || (!isLiveGame && player === 1);
+      const myPlayer = isLiveGame ? getLocalPlayer() : 1;
+      const isMe = player === myPlayer;
       if (isMe) playWinSound();
       else playLoseSound();
       return true;
@@ -481,7 +494,7 @@
   // Manejador de eventos remotos WebRTC
   window._handleRemoteConnect4Drop = function(data) {
     if (!data || typeof data.col !== 'number') return;
-    const remotePlayer = (typeof data.player === 'number') ? data.player : (isChimpiRole ? 1 : 2);
+    const remotePlayer = getRemotePlayer();
     makeMove(data.col, remotePlayer);
   };
 

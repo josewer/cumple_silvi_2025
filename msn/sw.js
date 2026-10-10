@@ -1,5 +1,5 @@
-// Service Worker v25 - Guerra de Nieve táctica simultánea (triángulo de combate y cancelación)
-const CACHE_NAME = 'msn-pinchi-v25';
+// Service Worker v26 - Sincronización robusta P2P en Conecta 4 y fixes visuales
+const CACHE_NAME = 'msn-pinchi-v26';
 
 const CORE_ASSETS = [
   './',
