@@ -112,7 +112,6 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            animation: c4-drop-anim 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
           }
           .c4-piece-2 {
             background: radial-gradient(circle at 35% 35%, #ff9ff3, #f368e0);
@@ -124,11 +123,13 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            animation: c4-drop-anim 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          }
+          .c4-dropping {
+            animation: c4-drop-anim 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94);
           }
           @keyframes c4-drop-anim {
-            0% { transform: translateY(-240px); opacity: 0.6; }
-            80% { transform: translateY(6px); }
+            0% { transform: translateY(var(--drop-from, -240px)); opacity: 0.8; }
+            80% { transform: translateY(4px); }
             100% { transform: translateY(0); opacity: 1; }
           }
           .c4-actions {
@@ -254,7 +255,6 @@
         isAnimating = true;
         setTimeout(() => {
           makeAIMove();
-          isAnimating = false;
         }, 600);
       }
     }
@@ -313,11 +313,35 @@
     boardState[r][col] = player;
     playDropSound();
 
+    isAnimating = true;
     const grid = document.getElementById('c4Grid');
-    if (grid) grid.innerHTML = renderGridHtml();
+    if (grid) {
+      const slot = grid.querySelector(`.c4-slot[data-row="${r}"][data-col="${col}"]`);
+      if (slot) {
+        const piece = document.createElement('div');
+        piece.className = `c4-piece-${player} c4-dropping`;
+        piece.innerHTML = player === 1 ? '🐧' : '🐷';
+        const dropPx = (r + 1) * 46;
+        piece.style.setProperty('--drop-from', `-${dropPx}px`);
+        slot.innerHTML = '';
+        slot.appendChild(piece);
+        setTimeout(() => {
+          piece.classList.remove('c4-dropping');
+        }, 340);
+      } else {
+        grid.innerHTML = renderGridHtml();
+      }
+    }
+
+    setTimeout(() => {
+      if (isLiveGame || currentTurn === 1 || isGameOver) {
+        isAnimating = false;
+      }
+    }, 340);
 
     if (checkWin(r, col, player)) {
       isGameOver = true;
+      isAnimating = false;
       const winnerName = player === 1 ? '¡Pinchi 🐧 ha ganado!' : '¡Chimpi 🐷 ha ganado!';
       updateTurnIndicator(`🏆 ${winnerName}`, '#28a745');
 
@@ -329,6 +353,7 @@
 
     if (checkDraw()) {
       isGameOver = true;
+      isAnimating = false;
       updateTurnIndicator('🤝 ¡Empate en el tablero!', '#e67e22');
       if (typeof playRetroTone === 'function') playRetroTone(300, 'sine', 0.3);
       return true;

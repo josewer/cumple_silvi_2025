@@ -59,7 +59,8 @@ c:\dev\cumple_pinchi_2025\
         ├── brick.js            (11. Rompe-Ladrillos Pingüino)
         ├── hangman.js          (12. Ahorcado Romántico - Salva la tarta)
         ├── bubbles.js          (13. Burbujas del Amor)
-        └── quiz.js             (14. Test de Pareja Cómico)
+        ├── quiz.js             (14. Test de Pareja Cómico)
+        └── battleship.js       (15. Hundir la Flota: Batalla Naval)
 ```
 
 ---
@@ -78,12 +79,13 @@ Todos los minijuegos son táctiles, tienen sonido retro sintetizado (Web Audio A
 | 6 | `games/wheel.js` | **La Ruleta Millennial** | 🎡 | Ruleta de premios con desaceleración física, sonido de tic-tac y vales de regalo reales (Cena, Peli+Manta, Masaje, Escapada, etc.). |
 | 7 | `games/tictactoe.js` | **Tres en Raya MSN** | ❌⭕ | Duelo directo: **Pinchi (🐧)** contra **Chimpi el Cerdito (🐷)**. Incluye IA que intenta ganar o bloquear y frases cómicas de Chimpi (*"Oink!"*). |
 | 8 | `games/puzzle.js` | **Puzzle Deslizante** | 🧩 | Cuadrícula 3x3 para ordenar las piezas desordenadas de una foto de recuerdo. |
-| 9 | `games/simon.js` | **Simón Dice MSN** | 🎶 | Secuencia de luces y tonos retro generados con Web Audio. Hay que recordar y repetir 5 rondas. |
+| 9 | `games/simon.js` | **Simón Dice MSN** | 🎶 | Secuencia audiovisual retro con **Modo Infinito** (sin límite de rondas y guardado de récord en `localStorage`), **Selector de Ayuda Visual** (Modo Normal con luces neón y sonido vs. Modo Experto con solo oído musical), modo de calentamiento libre previo y chivato de tecla correcta al fallar. |
 | 10 | `games/feedpig.js` | **Alimenta a Chimpi** | 🍖 | Chimpi el cerdito se mueve arriba y Pinchi tiene raciones de comida limitadas (14 raciones) para acertar 8 veces antes de que se agote la comida o el tiempo. |
 | 11 | `games/brick.js` | **Rompe-Ladrillos MSN** | 🧱 | Arkanoid retro clásico donde una pala de hielo controlada con el dedo rebota bolas de nieve para destruir 18 ladrillos. |
 | 12 | `games/hangman.js` | **Ahorcado Romántico** | 🔤 | Adivina frases románticas en un teclado virtual antes de que Chimpi avance 6 pasos y se coma la tarta de cumple. |
 | 13 | `games/bubbles.js` | **Burbujas del Amor** | 🫧 | Explota 20 burbujas flotantes tocándolas en pantalla con sonido "pop" antes de que escapen. |
 | 14 | `games/quiz.js` | **Test de Pareja Cómico** | 💑 | 5 preguntas divertidas de pareja con respuestas cómicas y veredicto final con confeti de cumpleaños. |
+| 15 | `games/battleship.js` | **Hundir la Flota MSN** | 🚢 | Batalla naval 6x6 (Live P2P WebRTC y vs IA). Turno inicial aleatorio (50%), zona de seguridad perimetral obligatoria de 1 casilla de agua en 8 direcciones, estados visuales diferenciados (Agua 💧, Tocado 🔥 con fuego y Hundido 💥 con explosión y naufragio completo del barco), y diseño vertical optimizado para móvil (Radar de Ataque arriba y Flota abajo con celdas de 35px). |
 
 ---
 
@@ -153,7 +155,15 @@ Implementado en `msn/live_chimpi.js` para permitir que Chimpi se conecte en dire
    - **Tres en Raya Multijugador Real:** El juego detecta la conexión en vivo y permite que Chimpi juegue como el cerdito 🐷 por turnos contra el pingüino 🐧 de Pinchi en directo, desactivando la IA.
    - **Reto de Memoria Multijugador en Vivo:** Duelo de memoria por turnos sincronizado en tiempo real. Pinchi (🐧) y Chimpi (🐷) juegan sobre un tablero de 12 cartas idéntico sincronizado vía WebRTC; cada uno levanta cartas en su turno y el otro lo ve en directo. Quien acierta una pareja suma punto, repite turno y se ilumina la carta con su color (azul MSN para Pinchi, rosa para Chimpi). Al final, se determina el ganador con frases cómicas, confeti y vibración. Si no hay conexión en vivo, funciona en modo individual clásico.
    - **Sistema de Invitaciones a Juegos MSN (Estilo Retro):** Tanto desde el banner de Chimpi como desde la Sala de Juegos MSN, se puede enviar una invitación por chat para jugar juntos (Tres en Raya, Reto de Memoria o Hundir la Flota). Al invitado le suena la notificación clásica de MSN, vibra el móvil y le aparece en el chat la tarjeta retro compacta con botones interactivos `[✅ Aceptar]` y `[❌ Rechazar]`. Si acepta, se abre la partida sincronizada en ambos teléfonos simultáneamente; si rechaza, se notifica amigablemente al remitente.
-   - **Hundir la Flota (Batalla Naval 6x6 en Vivo y Solitario):** Minijuego clásico naval retro. Cada jugador posiciona sus 4 barcos (Acorazado de 3 casillas, Fragata de 2, Lancha de 2 y Submarino de 1) pudiendo barajar su flota aleatoriamente con 🎲. Al zarpar ambos jugadores, se activa el Radar de Ataque y la cuadrícula defensiva. Por turnos, se disparan torpedos vía WebRTC (o contra la IA porcina de Chimpi en solitario). Cuenta con sonidos navales sintetizados (sonar ping, chapoteo de agua, explosión de tocado y fanfarria de barco hundido). El ganador recibe confeti y fanfarria de victoria; en caso de derrota, no hay confeti. Si cualquiera de los dos abandona la partida cerrando la ventana, se avisa en el chat y se cierra el juego en ambos dispositivos.
+   - **Hundir la Flota (Batalla Naval 6x6 en Vivo y Solitario):** Minijuego clásico naval retro.
+     - *Posicionamiento:* Cada jugador posiciona sus 4 barcos (Acorazado de 3 casillas, Fragata de 2, Lancha de 2 y Submarino de 1) pudiendo barajar su flota con 🎲. Cuenta con **zona de seguridad perimetral obligatoria de 1 casilla de agua en 8 direcciones** (horizontal, vertical y diagonal), garantizando que ningún barco se toque.
+     - *Iniciativa aleatoria:* Sorteo del 50% al comenzar la batalla para determinar quién abre fuego (Pinchi 🐧 o Chimpi 🐷). En multijugador WebRTC se sincroniza con el mensaje `bs_start_turn`.
+     - *Combate y estados visuales:* Disparo de torpedos por turnos. El acierto repite turno. Estados diferenciados:
+       - 💧 *Agua:* chapoteo y pase de turno.
+       - 🔥 *Tocado:* impacto con fuego animado (`@keyframes bs-fire-pulse`) y explosión de proyectil.
+       - 💥 *Hundido:* fanfarria náutica y **conversión completa de todas las casillas del barco a color naufragio carmesí oscuro**, sincronizado también remotamente vía WebRTC mediante el array `sunkShipCells`.
+     - *Diseño Vertical Táctil:* Optimizado para móviles y PWA sin barras de scroll residuales; el **Radar de Ataque (enemigo)** se sitúa arriba y **Tu Flota Defensiva** abajo, con celdas ampliadas a 35px para máxima comodidad táctil con los dedos.
+     - *Victoria y abandono:* El ganador recibe confeti y fanfarria; el perdedor, tono grave sin celebración. Si se cierra la ventana, se sincroniza el abandono en el chat.
    - **Conecta 4 MSN (Antártida vs Porqueriza):** Matriz de 6x7 con fichas 🐧 vs 🐷. Pinchi empieza siempre. Caída animada por gravedad, detección de 4 en raya (horizontal, vertical, diagonal), Web Audio (clack grave, victoria/derrota) y modo IA en solitario.
    - **Duelo de Reflejos MSN ("¿Quién da el Zumbido Primero?"):** Partida al mejor de 5 rondas. El host genera retardo aleatorio (2.5s-6s) con `BUZZ_PREPARE`. Al activarse, la pantalla parpadea en amarillo y suena el zumbido. Quien pulse antes comete falta (`BUZZ_FOUL`) y el punto va al rival. Con `.msn-shake` y respuesta háptica.
    - **Pizarra MSN (NetMeeting / Pictionary Compartido):** Lienzo interactivo de 320x320 con coordenadas normalizadas relativas (0-1000). Barra de herramientas con lápiz, goma, 6 colores retro y borrado. 40 conceptos cómicos/íntimos a adivinar en 60 segundos con caja de texto e inversión de roles al acertar.
