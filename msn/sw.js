@@ -1,5 +1,5 @@
-// Service Worker v37 - Corrección de servidores TURN OpenRelay, TURNS sobre 443 TCP y timeout 15s para redes 4G/CGNAT
-const CACHE_NAME = 'msn-pinchi-v37';
+// Service Worker v38 - Indicador visible de estado P2P en Pinchi, purga de sockets zombis en 4G/5G y heartbeat 3s
+const CACHE_NAME = 'msn-pinchi-v38';
 
 const CORE_ASSETS = [
   './',

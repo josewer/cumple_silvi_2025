@@ -110,8 +110,8 @@
       }
     } else {
       // --- VISTA DE PINCHI ---
+      banner.style.display = 'flex';
       if (isConnected) {
-        banner.style.display = 'flex';
         banner.style.background = '#e7f5ff';
         banner.style.color = '#0078d7';
         banner.style.borderBottom = '1.5px solid #70a1ff';
@@ -125,18 +125,53 @@
         if (mobileStatus) {
           mobileStatus.innerHTML = `🟢 <b>En directo contigo ahora mismo</b>`;
         }
-      } else {
-        banner.style.display = 'none';
+      } else if (status === 'waiting') {
+        banner.style.background = '#f0fbf0';
+        banner.style.color = '#2e7d32';
+        banner.style.borderBottom = '1px solid #c8e6c9';
+        banner.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:2px 4px;font-size:11px;">
+            <span>🟢 <b>Red P2P lista:</b> Esperando a Chimpi (🐷)</span>
+            <button id="reconPinchiBtn" style="background:#fff;border:1px solid #a5d6a7;border-radius:3px;padding:2px 8px;font-size:10px;cursor:pointer;color:#2e7d32;">🔄 Refrescar</button>
+          </div>
+        `;
+        const rBtn = document.getElementById('reconPinchiBtn');
+        if (rBtn) rBtn.onclick = () => initP2P();
         const mobileStatus = document.querySelector('.mobile-contact-status');
         if (mobileStatus) {
           mobileStatus.innerHTML = `🎵 Escuchando: Avril Lavigne - Complicated`;
         }
+      } else if (status === 'error') {
+        banner.style.background = '#fff3cd';
+        banner.style.color = '#856404';
+        banner.style.borderBottom = '1px solid #ffeeba';
+        banner.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:2px 4px;font-size:11px;">
+            <span>⚠️ <b>Reconectando señal P2P...</b></span>
+            <button id="reconPinchiBtn" style="background:#fff;border:1px solid #ffeeba;border-radius:3px;padding:2px 8px;font-size:10px;cursor:pointer;color:#856404;">🔄 Forzar</button>
+          </div>
+        `;
+        const rBtn = document.getElementById('reconPinchiBtn');
+        if (rBtn) rBtn.onclick = () => initP2P();
+      } else {
+        banner.style.background = '#fff8e1';
+        banner.style.color = '#b78103';
+        banner.style.borderBottom = '1px solid #ffe082';
+        banner.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:2px 4px;font-size:11px;">
+            <span>🟡 <b>Iniciando red P2P...</b></span>
+            <button id="reconPinchiBtn" style="background:#fff;border:1px solid #ffe082;border-radius:3px;padding:2px 8px;font-size:10px;cursor:pointer;color:#b78103;">🔄</button>
+          </div>
+        `;
+        const rBtn = document.getElementById('reconPinchiBtn');
+        if (rBtn) rBtn.onclick = () => initP2P();
       }
     }
   }
 
   const PEER_CONFIG = {
     debug: 1,
+    pingInterval: 3000,
     config: {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -198,6 +233,7 @@
   // --- MODO PINCHI (ESCUCHA CONEXIÓN) ---
   function setupPinchiMode() {
     clearTimeout(pinchiRetryTimeout);
+    updateLiveUI('connecting', false);
 
     if (peer && !peer.destroyed) {
       try { peer.destroy(); } catch (e) {}
@@ -207,12 +243,14 @@
       peer = new Peer(PINCHI_PEER_ID, PEER_CONFIG);
     } catch (e) {
       console.warn('Pinchi: Error al instanciar Peer:', e);
+      updateLiveUI('error', false);
       pinchiRetryTimeout = setTimeout(setupPinchiMode, 3000);
       return;
     }
 
     peer.on('open', (id) => {
       console.log('Pinchi lista para recibir a Chimpi. ID:', id);
+      updateLiveUI('waiting', false);
     });
 
     peer.on('connection', (conn) => {
@@ -252,7 +290,7 @@
         if (activeConn === conn) {
           activeConn = null;
           window._liveConnection = null;
-          updateLiveUI('disconnected', false);
+          updateLiveUI('waiting', false);
         }
       });
 
@@ -263,23 +301,18 @@
 
     peer.on('error', (err) => {
       console.warn('Pinchi Peer error:', err.type, err);
-      if (err.type === 'unavailable-id') {
-        console.log('ID temporalmente retenida en servidor. Reintentando en 3s...');
-        clearTimeout(pinchiRetryTimeout);
-        pinchiRetryTimeout = setTimeout(() => {
-          if (!activeConn || !activeConn.open) {
-            setupPinchiMode();
-          }
-        }, 3000);
-      } else if (err.type === 'disconnected' || err.type === 'network') {
-        if (peer && !peer.destroyed) {
-          try { peer.reconnect(); } catch (e) {}
+      updateLiveUI('error', false);
+      clearTimeout(pinchiRetryTimeout);
+      pinchiRetryTimeout = setTimeout(() => {
+        if (!activeConn || !activeConn.open) {
+          setupPinchiMode();
         }
-      }
+      }, 3000);
     });
 
     peer.on('disconnected', () => {
       console.log('Pinchi Peer desconectado del servidor. Intentando reconectar...');
+      updateLiveUI('error', false);
       if (peer && !peer.destroyed) {
         try { peer.reconnect(); } catch (e) {}
       } else {
@@ -1103,25 +1136,19 @@
     }
   };
 
-  // Reconectar automáticamente si se cambia de pestaña, se recupera la red o se desbloquea el móvil
+  // Reconectar automáticamente si se cambia de red (Wi-Fi <-> 4G/5G), visibilidad o se desbloquea el móvil
   function handleDeviceWakeup() {
-    console.log('Dispositivo activo o en primer plano. Verificando estado P2P...');
-    if (!peer || peer.destroyed) {
-      initP2P();
+    console.log('Cambio de red o primer plano detectado. Verificando estado P2P...');
+    if (activeConn && activeConn.open) {
+      // Si la conexión WebRTC P2P ya está abierta y funcionando, no la interrumpas
       return;
     }
-    if (peer.disconnected) {
-      try { peer.reconnect(); } catch (e) {}
+    // Si no estamos conectados en directo, destruir el socket potencialmente zombi y registrar de cero con la nueva IP/red
+    if (peer && !peer.destroyed) {
+      try { peer.destroy(); } catch (e) {}
     }
-    if (!activeConn || !activeConn.open) {
-      if (isChimpiMode) {
-        initP2P();
-      } else {
-        if (!peer.open && !peer.destroyed) {
-          try { peer.reconnect(); } catch (e) {}
-        }
-      }
-    }
+    peer = null;
+    initP2P();
   }
 
   window.addEventListener('online', () => {
