@@ -13,7 +13,7 @@ function openCatcherGame() {
       <div style="color:#e81123;">Tiempo: <span id="ctTimer">30</span>s</div>
     </div>
     <div style="position:relative;width:100%;max-width:340px;display:flex;justify-content:center;">
-      <canvas id="catcherCanvas" width="340" height="260" style="background:linear-gradient(180deg, #dcf0ff, #fff5ea);border:2px solid #2e8b57;border-radius:10px;display:block;touch-action:none;"></canvas>
+      <canvas id="catcherCanvas" width="340" height="260" style="background:#3880ff;border:3px solid #0078d7;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.22);display:block;touch-action:none;"></canvas>
     </div>
     <div id="ctStatus" style="font-size:12px;color:#555;">Desliza tu dedo hacia la izquierda y derecha para moverte</div>
     ${hubBackBtnHtml()}
@@ -41,8 +41,8 @@ function openCatcherGame() {
   function movePlayer(clientX) {
     const rect = canvas.getBoundingClientRect();
     playerX = clientX - rect.left;
-    if (playerX < 20) playerX = 20;
-    if (playerX > canvas.width - 20) playerX = canvas.width - 20;
+    if (playerX < 24) playerX = 24;
+    if (playerX > canvas.width - 24) playerX = canvas.width - 24;
   }
 
   canvas.addEventListener('pointermove', (e) => { movePlayer(e.clientX); });
@@ -63,7 +63,7 @@ function openCatcherGame() {
     const emoji = types[Math.floor(Math.random() * types.length)];
     items.push({
       emoji: emoji,
-      x: 20 + Math.random() * (canvas.width - 40),
+      x: 24 + Math.random() * (canvas.width - 48),
       y: -20,
       vy: 2.2 + Math.random() * 2.0
     });
@@ -75,24 +75,68 @@ function openCatcherGame() {
       spawnFallingItem();
     }
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // 1. Cielo con degradado vibrante 100% sólido
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height - 32);
+    skyGrad.addColorStop(0, '#2e86de');
+    skyGrad.addColorStop(0.5, '#54a0ff');
+    skyGrad.addColorStop(1, '#dfe6e9');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height - 32);
 
-    ctx.fillStyle = "rgba(60, 179, 113, 0.15)";
-    ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
+    // 2. Nubes decorativas en movimiento
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+    const cloud1X = ((frame * 0.4) % (canvas.width + 120)) - 60;
+    ctx.beginPath();
+    ctx.arc(cloud1X, 36, 16, 0, Math.PI * 2);
+    ctx.arc(cloud1X + 16, 30, 22, 0, Math.PI * 2);
+    ctx.arc(cloud1X + 34, 36, 16, 0, Math.PI * 2);
+    ctx.fill();
 
-    ctx.font = "32px sans-serif";
-    ctx.fillText("🐧", playerX - 18, playerY + 8);
-    ctx.font = "20px sans-serif";
-    ctx.fillText("🧺", playerX - 4, playerY + 12);
+    const cloud2X = ((frame * 0.22 + 180) % (canvas.width + 140)) - 70;
+    ctx.beginPath();
+    ctx.arc(cloud2X, 70, 13, 0, Math.PI * 2);
+    ctx.arc(cloud2X + 14, 65, 17, 0, Math.PI * 2);
+    ctx.arc(cloud2X + 28, 70, 13, 0, Math.PI * 2);
+    ctx.fill();
 
+    // 3. Suelo sólido festivo
+    const groundGrad = ctx.createLinearGradient(0, canvas.height - 32, 0, canvas.height);
+    groundGrad.addColorStop(0, '#10ac84');
+    groundGrad.addColorStop(1, '#057a5b');
+    ctx.fillStyle = groundGrad;
+    ctx.fillRect(0, canvas.height - 32, canvas.width, 32);
+
+    // Nieve decorativa superior del suelo
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, canvas.height - 33, canvas.width, 3);
+
+    // 4. Sombra suave bajo Pinchi
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    ctx.beginPath();
+    ctx.ellipse(playerX, playerY + 12, 22, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 5. Pinchi y cesta (100% opaco y sólido)
+    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = '#000000';
+    ctx.font = '34px sans-serif';
+    ctx.fillText('🐧', playerX - 18, playerY + 8);
+    ctx.font = '22px sans-serif';
+    ctx.fillText('🧺', playerX + 6, playerY + 8);
+
+    // 6. Regalos cayendo (100% opaco y sólido)
     for (let i = items.length - 1; i >= 0; i--) {
       const it = items[i];
       it.y += it.vy;
 
-      ctx.font = "24px sans-serif";
-      ctx.fillText(it.emoji, it.x - 12, it.y);
+      ctx.globalAlpha = 1.0;
+      ctx.fillStyle = '#000000';
+      ctx.font = '26px sans-serif';
+      ctx.fillText(it.emoji, it.x - 13, it.y);
 
-      if (Math.abs(it.x - playerX) < 28 && Math.abs(it.y - playerY) < 22) {
+      if (Math.abs(it.x - playerX) < 30 && Math.abs(it.y - playerY) < 24) {
         score++;
         scoreElem.textContent = score;
         playRetroTone(550, 'triangle', 0.09);
@@ -104,6 +148,7 @@ function openCatcherGame() {
           statusElem.innerHTML = '<b style="color:#2e8b57;font-size:16px;">¡RETO SUPERADO! 🎉 ¡Has atrapado todos los regalos!</b>';
           if (navigator.vibrate) try { navigator.vibrate([100, 50, 100, 50, 200]); } catch (e) {}
           if (typeof lanzarConfetiVariasVeces === 'function') lanzarConfetiVariasVeces();
+          else if (typeof dispararConfetiCanvas === 'function') dispararConfetiCanvas();
         }
         continue;
       }

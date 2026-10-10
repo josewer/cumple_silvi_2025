@@ -53,6 +53,7 @@
     isGameOver = false;
 
     clearTimers();
+    window._activeGameCleanup = clearTimers;
 
     if (content) {
       content.innerHTML = `

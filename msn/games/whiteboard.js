@@ -53,6 +53,7 @@
     isDrawer = isLiveGame ? isChimpiRole : true;
     pickNewWord();
     clearInterval(timerInterval);
+    window._activeGameCleanup = () => { clearInterval(timerInterval); };
 
     if (content) {
       content.innerHTML = `

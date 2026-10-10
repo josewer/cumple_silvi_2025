@@ -75,18 +75,9 @@
         banner.style.color = '#ffffff';
         banner.innerHTML = `
           <span>🟢 <b>EN VIVO CON PINCHI:</b> Eres Chimpi (🐷). El bot está silenciado.</span>
-          <div style="display:flex;gap:6px;margin-left:auto;flex-wrap:wrap;justify-content:center;">
+          <div style="margin-left:auto;display:flex;align-items:center;">
             <button id="toggleBotBtn" style="background:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;color:#333;">
               ${window._botSilenced ? '🤖 Bot: 🔇 Silenciado' : '🤖 Bot: 🔊 Activo'}
-            </button>
-            <button id="launchLiveTTT" style="background:#ffc107;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;color:#111;">
-              🎮 Invitar 3 en Raya
-            </button>
-            <button id="launchLiveMemory" style="background:#00d2d3;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;color:#111;">
-              🧠 Invitar Memoria
-            </button>
-            <button id="launchLiveFleet" style="background:#e67e22;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;color:#fff;">
-              🚢 Invitar Flota
             </button>
           </div>
         `;
@@ -100,21 +91,6 @@
             }
             updateLiveUI('connected', true);
           };
-        }
-
-        const tttBtn = document.getElementById('launchLiveTTT');
-        if (tttBtn) {
-          tttBtn.onclick = () => window.sendLiveGameInvite('tictactoe');
-        }
-
-        const memBtn = document.getElementById('launchLiveMemory');
-        if (memBtn) {
-          memBtn.onclick = () => window.sendLiveGameInvite('memory');
-        }
-
-        const fleetBtn = document.getElementById('launchLiveFleet');
-        if (fleetBtn) {
-          fleetBtn.onclick = () => window.sendLiveGameInvite('battleship');
         }
       } else {
         banner.style.background = '#ffc107';
@@ -140,28 +116,10 @@
         banner.style.color = '#0078d7';
         banner.style.borderBottom = '1.5px solid #70a1ff';
         banner.innerHTML = `
-          <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;width:100%;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:2px 0;">
             <span>✨ <b>¡Chimpi está en directo contigo! 🐷💖</b></span>
-            <div style="display:flex;gap:6px;margin-left:auto;">
-              <button id="pinchiInviteTTT" style="background:#0078d7;color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;">
-                ❌⭕ Invitar 3 en Raya
-              </button>
-              <button id="pinchiInviteMem" style="background:#28a745;color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;">
-                🧠 Invitar Memoria
-              </button>
-              <button id="pinchiInviteFleet" style="background:#e67e22;color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:bold;cursor:pointer;">
-                🚢 Invitar Flota
-              </button>
-            </div>
           </div>
         `;
-
-        const pTTT = document.getElementById('pinchiInviteTTT');
-        if (pTTT) pTTT.onclick = () => window.sendLiveGameInvite('tictactoe');
-        const pMem = document.getElementById('pinchiInviteMem');
-        if (pMem) pMem.onclick = () => window.sendLiveGameInvite('memory');
-        const pFleet = document.getElementById('pinchiInviteFleet');
-        if (pFleet) pFleet.onclick = () => window.sendLiveGameInvite('battleship');
 
         const mobileStatus = document.querySelector('.mobile-contact-status');
         if (mobileStatus) {

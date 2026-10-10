@@ -1,5 +1,5 @@
-// Service Worker v26 - Sincronización robusta P2P en Conecta 4 y fixes visuales
-const CACHE_NAME = 'msn-pinchi-v26';
+// Service Worker v32 - Bloqueo atómico de gol único y congelación de físicas al anotar en Air Hockey
+const CACHE_NAME = 'msn-pinchi-v32';
 
 const CORE_ASSETS = [
   './',

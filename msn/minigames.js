@@ -55,6 +55,16 @@ function closeGameModal(isRemoteClose) {
     cancelAnimationFrame(window._animFrame);
     window._animFrame = null;
   }
+
+  // Hook global de limpieza para módulos con timers o animación propios
+  if (typeof window._activeGameCleanup === 'function') {
+    try {
+      window._activeGameCleanup();
+    } catch (e) {
+      console.warn('Error en _activeGameCleanup:', e);
+    }
+    window._activeGameCleanup = null;
+  }
 }
 window.closeGameModal = closeGameModal;
 
@@ -272,9 +282,14 @@ function openGamesHub() {
 
   if (title) title.textContent = '🎮 MSN Games - Salón de Juegos Retro';
 
+  var liveGameIds = ['tictactoe', 'memory', 'battleship', 'connect4', 'buzzduel', 'whiteboard', 'snowbattle', 'tugofwar', 'synctest', 'rebus', 'airhockey', 'sharedwheel'];
+
   var cardsHtml = MSN_GAMES_CATALOG.map(function(g) {
+    var isLiveSupported = liveGameIds.indexOf(g.id) !== -1;
+    var liveBadge = isLiveSupported ? '<span class="game-hub-badge-live">🟢 En línea</span>' : '';
     return (
       '<div class="game-hub-card" data-game-id="' + g.id + '">' +
+        liveBadge +
         '<div class="game-hub-icon">' + g.icon + '</div>' +
         '<div class="game-hub-info">' +
           '<b>' + g.title + '</b>' +
@@ -284,49 +299,14 @@ function openGamesHub() {
     );
   }).join('');
 
-  var isLive = !!((window.liveChimpi && window.liveChimpi.conn && window.liveChimpi.conn.open) || (window._liveConnection && window._liveConnection.open));
-  var isChimpi = !!window._isChimpiMode;
-  var opponentName = isChimpi ? 'Pinchi 🐧' : 'Chimpi 🐷';
-
-  var liveInviteHeaderHtml = '';
-  if (isLive) {
-    liveInviteHeaderHtml =
-      '<div style="background:linear-gradient(135deg,#e7f5ff,#d0ebff);border:2px solid #0078d7;border-radius:10px;padding:10px 12px;margin-bottom:12px;width:100%;box-sizing:border-box;">' +
-        '<div style="font-weight:bold;font-size:13px;color:#004a9f;margin-bottom:4px;">' +
-          '🟢 ¡CONEXIÓN EN DIRECTO CON ' + opponentName.toUpperCase() + '! 💖' +
-        '</div>' +
-        '<div style="font-size:12px;color:#333;margin-bottom:8px;">' +
-          'Toca cualquier juego para jugar juntos en directo o enviar una invitación:' +
-        '</div>' +
-        '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">' +
-          '<button class="msn-game-launch-btn" style="background:#0078d7;padding:5px 10px;font-size:11px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'connect4\');">' +
-            '📨 Conecta 4 🔴🔵' +
-          '</button>' +
-          '<button class="msn-game-launch-btn" style="background:#e17055;padding:5px 10px;font-size:11px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'buzzduel\');">' +
-            '📨 Zumbidos ⚡' +
-          '</button>' +
-          '<button class="msn-game-launch-btn" style="background:#0984e3;padding:5px 10px;font-size:11px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'airhockey\');">' +
-            '📨 Air Hockey 🏒' +
-          '</button>' +
-          '<button class="msn-game-launch-btn" style="background:#28a745;padding:5px 10px;font-size:11px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'sharedwheel\');">' +
-            '📨 Ruleta 🎡' +
-          '</button>' +
-        '</div>' +
-      '</div>';
-  }
-
   if (content) {
     content.innerHTML =
-      liveInviteHeaderHtml +
-      '<div style="font-size:14px;color:#333;margin-bottom:6px;">' +
-        '¡Elige a qué minijuego quieres jugar con Chimpi el Cerdito! 🐧🐷✨' +
+      '<div style="font-size:13px;color:#333;margin-bottom:8px;text-align:center;">' +
+        '¡Elige a qué minijuego quieres jugar! 🐧🐷✨' +
       '</div>' +
       '<div class="games-hub-grid">' +
         cardsHtml +
       '</div>';
-
-    // Asignar listeners a cada tarjeta
-    var liveGameIds = ['tictactoe', 'memory', 'battleship', 'connect4', 'buzzduel', 'whiteboard', 'snowbattle', 'tugofwar', 'synctest', 'rebus', 'airhockey', 'sharedwheel'];
 
     MSN_GAMES_CATALOG.forEach(function(g) {
       var card = content.querySelector('[data-game-id="' + g.id + '"]');

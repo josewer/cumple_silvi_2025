@@ -5,28 +5,39 @@
 (function() {
   let animId = null;
   let broadcastInterval = null;
+  let countdownTimer = null;
   let isLiveGame = false;
   let isChimpiRole = false;
   let scorePinchi = 0;
   let scoreChimpi = 0;
   let isGameOver = false;
+  let isGoalScoring = false;
+
+  // Estado de la cuenta atrás (3, 2, 1, ¡YA!)
+  let countdown = 3;
+  let countdownText = '3';
+  let stuckFrames = 0;
 
   // Dimensiones del campo virtual: 300 x 420
   const W = 300;
   const H = 420;
   const PUCK_RADIUS = 11;
   const MALLET_RADIUS = 20;
-  const GOAL_WIDTH = 100;
+  const GOAL_WIDTH = 110;
 
-  // Estado del disco y mazos
+  // Estado del disco y mazos (con tracking de velocidad para golpes dinámicos)
   let puck = { x: W / 2, y: H / 2, vx: 0, vy: 0 };
-  let malletPinchi = { x: W / 2, y: H - 45 }; // Abajo
-  let malletChimpi = { x: W / 2, y: 45 };     // Arriba
+  let malletPinchi = { x: W / 2, y: H - 55, lastX: W / 2, lastY: H - 55, vx: 0, vy: 0 }; // Abajo
+  let malletChimpi = { x: W / 2, y: 55, lastX: W / 2, lastY: 55, vx: 0, vy: 0 };         // Arriba
 
   function getConnection() {
     return (window.liveChimpi && window.liveChimpi.conn && window.liveChimpi.conn.open)
       ? window.liveChimpi.conn
       : (window._liveConnection && window._liveConnection.open ? window._liveConnection : null);
+  }
+
+  function isChimpi() {
+    return !!(window._isChimpiMode || (new URLSearchParams(window.location.search).get('rol') === 'chimpi') || (new URLSearchParams(window.location.search).get('chimpi') === '1'));
   }
 
   function openAirHockeyGame(forceSolo) {
@@ -40,14 +51,15 @@
 
     const conn = getConnection();
     isLiveGame = !forceSolo && !!conn;
-    isChimpiRole = !!window._isChimpiMode;
+    isChimpiRole = isChimpi();
     window._activeLiveGame = isLiveGame ? 'Air Hockey MSN' : null;
 
+    clearLoops();
+    isGameOver = false;
+    isGoalScoring = false;
+    window._activeGameCleanup = clearLoops;
     scorePinchi = 0;
     scoreChimpi = 0;
-    isGameOver = false;
-    resetPuck(0);
-    clearLoops();
 
     if (content) {
       content.innerHTML = `
@@ -112,25 +124,91 @@
 
       setupCanvasEvents();
       startPhysicsLoop();
+      startCountdown(0);
     }
 
     if (modal) modal.style.display = 'flex';
   }
 
   function clearLoops() {
+    isGameOver = true;
+    isGoalScoring = false;
     if (animId) { cancelAnimationFrame(animId); animId = null; }
     if (broadcastInterval) { clearInterval(broadcastInterval); broadcastInterval = null; }
+    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   }
 
-  function resetPuck(direction) {
+  function playCountdownBeep(freq) {
+    if (typeof playRetroTone === 'function') playRetroTone(freq, 'sine', 0.12);
+  }
+
+  function playStartTone() {
+    if (typeof playRetroTone === 'function') {
+      playRetroTone(880, 'triangle', 0.22);
+      if (navigator.vibrate) try { navigator.vibrate(80); } catch (e) {}
+    }
+  }
+
+  function startCountdown(serveDirection) {
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdown = 3;
+    countdownText = '3';
+    isGoalScoring = false;
+
+    // Colocar disco inmóvil en el centro y centrar mazos
     puck.x = W / 2;
     puck.y = H / 2;
-    // Saque suave hacia quien recibió gol (o aleatorio al inicio)
-    const angle = (Math.PI / 4) + (Math.random() * Math.PI / 2);
-    const speed = 3;
+    puck.vx = 0;
+    puck.vy = 0;
+    malletPinchi.x = W / 2;
+    malletPinchi.y = H - 55;
+    malletPinchi.vx = 0;
+    malletPinchi.vy = 0;
+    malletChimpi.x = W / 2;
+    malletChimpi.y = 55;
+    malletChimpi.vx = 0;
+    malletChimpi.vy = 0;
+
+    const status = document.getElementById('hockeyStatus');
+    if (status && !isGameOver) status.textContent = '⏱️ ¡Preparados... 3!';
+
+    playCountdownBeep(440);
+
+    countdownTimer = setInterval(() => {
+      countdown--;
+      if (countdown === 2) {
+        countdownText = '2';
+        playCountdownBeep(520);
+        if (status && !isGameOver) status.textContent = '⏱️ ¡Listos... 2!';
+      } else if (countdown === 1) {
+        countdownText = '1';
+        playCountdownBeep(620);
+        if (status && !isGameOver) status.textContent = '⏱️ ¡Atentos... 1!';
+      } else if (countdown === 0) {
+        countdownText = '¡YA! 🏒';
+        playStartTone();
+        if (status && !isGameOver) status.textContent = '🔥 ¡A jugar!';
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+
+        setTimeout(() => {
+          countdownText = '';
+          // Saque activo del disco hacia la dirección correspondiente
+          if (!isLiveGame || !isChimpiRole) {
+            launchPuck(serveDirection);
+          }
+        }, 550);
+      }
+    }, 1000);
+  }
+
+  function launchPuck(direction) {
+    puck.x = W / 2;
+    puck.y = H / 2;
     const sign = direction === 0 ? (Math.random() < 0.5 ? 1 : -1) : direction;
-    puck.vx = (Math.random() - 0.5) * 3;
-    puck.vy = sign * speed;
+    const angleX = (Math.random() - 0.5) * 2.8;
+    puck.vx = angleX;
+    puck.vy = sign * 4.4;
   }
 
   function setupCanvasEvents() {
@@ -145,17 +223,25 @@
 
       if (isChimpiRole) {
         // Chimpi controla la mitad superior (y de 0 a H/2)
+        const prevX = malletChimpi.x;
+        const prevY = malletChimpi.y;
         malletChimpi.x = x;
         malletChimpi.y = Math.min(H / 2 - MALLET_RADIUS, Math.max(MALLET_RADIUS, y));
+        malletChimpi.vx = malletChimpi.x - prevX;
+        malletChimpi.vy = malletChimpi.y - prevY;
 
         if (isLiveGame) {
           const conn = getConnection();
-          if (conn) try { conn.send({ type: 'HOCKEY_PADDLE', x: malletChimpi.x, y: malletChimpi.y }); } catch (e) {}
+          if (conn) try { conn.send({ type: 'HOCKEY_PADDLE', x: malletChimpi.x, y: malletChimpi.y, vx: malletChimpi.vx, vy: malletChimpi.vy }); } catch (e) {}
         }
       } else {
         // Pinchi controla la mitad inferior (y de H/2 a H)
+        const prevX = malletPinchi.x;
+        const prevY = malletPinchi.y;
         malletPinchi.x = x;
         malletPinchi.y = Math.max(H / 2 + MALLET_RADIUS, Math.min(H - MALLET_RADIUS, y));
+        malletPinchi.vx = malletPinchi.x - prevX;
+        malletPinchi.vy = malletPinchi.y - prevY;
       }
     }
 
@@ -184,7 +270,9 @@
               scoreHost: scorePinchi,
               scoreGuest: scoreChimpi,
               malletPinchiX: malletPinchi.x,
-              malletPinchiY: malletPinchi.y
+              malletPinchiY: malletPinchi.y,
+              countdown: countdown,
+              countdownText: countdownText
             });
           } catch (e) {}
         }
@@ -195,6 +283,14 @@
       // 1. Simulación física (sólo la ejecuta Pinchi como Host, o en modo solitario)
       if (!isLiveGame || !isChimpiRole) {
         updatePhysics();
+      }
+
+      // Damping gradual de velocidad de los mazos cuando el dedo se detiene
+      malletPinchi.vx *= 0.65;
+      malletPinchi.vy *= 0.65;
+      if (!isLiveGame) {
+        malletChimpi.vx *= 0.65;
+        malletChimpi.vy *= 0.65;
       }
 
       // 2. Renderizado gráfico
@@ -209,32 +305,104 @@
   }
 
   function updatePhysics() {
-    // Si estamos en solitario, mover la IA de Chimpi con inercia natural
+    // Si estamos en cuenta atrás o celebrando un gol, no actualizar físicas del disco
+    if (countdown > 0 || isGoalScoring) return;
+
+    // Si estamos en solitario, IA mejorada para Chimpi con inteligencia de esquinas
     if (!isLiveGame) {
-      const targetX = puck.x;
-      const targetY = puck.y < H / 2 ? Math.max(45, puck.y - 30) : 45;
-      malletChimpi.x += (targetX - malletChimpi.x) * 0.08;
-      malletChimpi.y += (targetY - malletChimpi.y) * 0.08;
+      let targetX, targetY;
+      if (puck.y < H / 2) {
+        // ¿Está el disco en una esquina superior?
+        const inTopLeft = puck.x < 65 && puck.y < 75;
+        const inTopRight = puck.x > W - 65 && puck.y < 75;
+
+        if (inTopLeft) {
+          // Si está en la esquina izquierda, Chimpi se coloca a la derecha del disco para barrerlo hacia el centro
+          targetX = puck.x + 32;
+          targetY = Math.max(MALLET_RADIUS + 12, puck.y - 8);
+        } else if (inTopRight) {
+          // Si está en la esquina derecha, Chimpi se coloca a la izquierda para barrerlo hacia el centro
+          targetX = puck.x - 32;
+          targetY = Math.max(MALLET_RADIUS + 12, puck.y - 8);
+        } else {
+          // Disco en juego abierto: se lanza hacia el disco con ímpetu
+          targetX = puck.x;
+          targetY = Math.max(MALLET_RADIUS + 8, puck.y - 25);
+        }
+      } else {
+        // Disco en campo de Pinchi: defender el centro de su portería
+        targetX = W / 2 + (puck.x - W / 2) * 0.45;
+        targetY = 55;
+      }
+
+      const prevX = malletChimpi.x;
+      const prevY = malletChimpi.y;
+
+      malletChimpi.x += (targetX - malletChimpi.x) * 0.12;
+      malletChimpi.y += (targetY - malletChimpi.y) * 0.12;
       malletChimpi.x = Math.max(MALLET_RADIUS, Math.min(W - MALLET_RADIUS, malletChimpi.x));
       malletChimpi.y = Math.max(MALLET_RADIUS, Math.min(H / 2 - MALLET_RADIUS, malletChimpi.y));
+
+      malletChimpi.vx = malletChimpi.x - prevX;
+      malletChimpi.vy = malletChimpi.y - prevY;
     }
 
     // Movimiento del disco
     puck.x += puck.vx;
     puck.y += puck.vy;
 
-    // Fricción del hielo
-    puck.vx *= 0.992;
-    puck.vy *= 0.992;
+    // Fricción realista de mesa de aire (deslizamiento continuo y suave)
+    puck.vx *= 0.995;
+    puck.vy *= 0.995;
 
-    // Rebotes contra paredes laterales
+    // 1. Biselado y rebotes diagonales en esquinas para evitar trampas en ángulo recto
+    const CORNER_DIST = 32;
+    if (puck.x < CORNER_DIST && puck.y < CORNER_DIST) {
+      puck.vx = Math.abs(puck.vx) + 2.4;
+      puck.vy = Math.abs(puck.vy) + 2.4;
+      playWallSound();
+    } else if (puck.x > W - CORNER_DIST && puck.y < CORNER_DIST) {
+      puck.vx = -Math.abs(puck.vx) - 2.4;
+      puck.vy = Math.abs(puck.vy) + 2.4;
+      playWallSound();
+    } else if (puck.x < CORNER_DIST && puck.y > H - CORNER_DIST) {
+      puck.vx = Math.abs(puck.vx) + 2.4;
+      puck.vy = -Math.abs(puck.vy) - 2.4;
+      playWallSound();
+    } else if (puck.x > W - CORNER_DIST && puck.y > H - CORNER_DIST) {
+      puck.vx = -Math.abs(puck.vx) - 2.4;
+      puck.vy = -Math.abs(puck.vy) - 2.4;
+      playWallSound();
+    }
+
+    // 2. Desatascador polar automático (Watchdog anti-stuck si el disco se frena en un borde)
+    const currentSpeed = Math.hypot(puck.vx, puck.vy);
+    if (currentSpeed < 0.9 && (puck.x < 55 || puck.x > W - 55 || puck.y < 75 || puck.y > H - 75)) {
+      stuckFrames++;
+      if (stuckFrames > 70) { // Tras ~1.1 segundos casi detenido
+        stuckFrames = 0;
+        // Chimpi da un paso atrás inmediatamente hacia el centro para no tapar
+        malletChimpi.x = W / 2;
+        malletChimpi.y = 65;
+        // Impulso polar hacia el centro de la pista
+        const dirX = puck.x < W / 2 ? 1 : -1;
+        const dirY = puck.y < H / 2 ? 1 : -1;
+        puck.vx = dirX * (3.8 + Math.random());
+        puck.vy = dirY * (3.8 + Math.random());
+        playWallSound();
+      }
+    } else {
+      stuckFrames = 0;
+    }
+
+    // Rebotes elásticos contra paredes laterales
     if (puck.x - PUCK_RADIUS <= 0) {
       puck.x = PUCK_RADIUS;
-      puck.vx = -puck.vx;
+      puck.vx = Math.abs(puck.vx) * 0.96;
       playWallSound();
     } else if (puck.x + PUCK_RADIUS >= W) {
       puck.x = W - PUCK_RADIUS;
-      puck.vx = -puck.vx;
+      puck.vx = -Math.abs(puck.vx) * 0.96;
       playWallSound();
     }
 
@@ -244,13 +412,18 @@
     // Rebote superior o GOL de Pinchi
     if (puck.y - PUCK_RADIUS <= 0) {
       if (inGoalX) {
-        // ¡GOL DE PINCHI!
-        scorePinchi++;
-        onGoalScored('pinchi');
+        if (!isGoalScoring) {
+          isGoalScoring = true;
+          puck.vx = 0;
+          puck.vy = 0;
+          puck.y = -2;
+          scorePinchi++;
+          onGoalScored('pinchi');
+        }
         return;
       } else {
         puck.y = PUCK_RADIUS;
-        puck.vy = -puck.vy;
+        puck.vy = Math.abs(puck.vy) * 0.96;
         playWallSound();
       }
     }
@@ -258,20 +431,24 @@
     // Rebote inferior o GOL de Chimpi
     if (puck.y + PUCK_RADIUS >= H) {
       if (inGoalX) {
-        // ¡GOL DE CHIMPI!
-        scoreChimpi++;
-        onGoalScored('chimpi');
+        if (!isGoalScoring) {
+          isGoalScoring = true;
+          puck.vx = 0;
+          puck.vy = 0;
+          puck.y = H + 2;
+          scoreChimpi++;
+          onGoalScored('chimpi');
+        }
         return;
       } else {
         puck.y = H - PUCK_RADIUS;
-        puck.vy = -puck.vy;
+        puck.vy = -Math.abs(puck.vy) * 0.96;
         playWallSound();
       }
     }
 
-    // Colisión elástica disco vs mazo Pinchi
+    // Colisión elástica con transferencia de impulso del mazo
     checkMalletCollision(malletPinchi);
-    // Colisión elástica disco vs mazo Chimpi
     checkMalletCollision(malletChimpi);
   }
 
@@ -286,26 +463,35 @@
       const nx = dx / dist;
       const ny = dy / dist;
 
-      // Separar disco para evitar solapamiento
-      puck.x = mallet.x + nx * minDist;
-      puck.y = mallet.y + ny * minDist;
+      // Despegar disco para evitar solapamientos
+      puck.x = mallet.x + nx * (minDist + 1);
+      puck.y = mallet.y + ny * (minDist + 1);
 
-      // Impulso y velocidad
-      const speed = Math.max(4.5, Math.hypot(puck.vx, puck.vy) * 1.08);
-      puck.vx = nx * Math.min(speed, 9.5);
-      puck.vy = ny * Math.min(speed, 9.5);
+      // Transferencia real de fuerza del movimiento del mazo (Slap Shot)
+      const malletSpeedX = mallet.vx || 0;
+      const malletSpeedY = mallet.vy || 0;
+
+      let impulseX = nx * 5.2 + malletSpeedX * 0.75;
+      let impulseY = ny * 5.2 + malletSpeedY * 0.75;
+
+      let speed = Math.hypot(impulseX, impulseY);
+      speed = Math.max(4.6, Math.min(speed, 12.0));
+
+      const angle = Math.atan2(impulseY, impulseX);
+      puck.vx = Math.cos(angle) * speed;
+      puck.vy = Math.sin(angle) * speed;
 
       playMalletSound();
-      if (navigator.vibrate) try { navigator.vibrate(20); } catch (e) {}
+      if (navigator.vibrate) try { navigator.vibrate(25); } catch (e) {}
     }
   }
 
   function playMalletSound() {
-    if (typeof playRetroTone === 'function') playRetroTone(440, 'sine', 0.03);
+    if (typeof playRetroTone === 'function') playRetroTone(440, 'sine', 0.04);
   }
 
   function playWallSound() {
-    if (typeof playRetroTone === 'function') playRetroTone(220, 'sine', 0.02);
+    if (typeof playRetroTone === 'function') playRetroTone(220, 'sine', 0.03);
   }
 
   function playGoalWhistle() {
@@ -337,7 +523,7 @@
     if (sC) sC.textContent = scoreChimpi;
 
     const status = document.getElementById('hockeyStatus');
-    const scorerName = scorer === 'pinchi' ? '¡GOLAZO DE PINCHI! 🐧⚽' : '¡GOLAZO DE CHIMPI! 🐷⚽';
+    const scorerName = scorer === 'pinchi' ? '⚽ ¡GOLAZO DE PINCHI! 🐧' : '⚽ ¡GOLAZO DE CHIMPI! 🐷';
     if (status) status.textContent = scorerName;
 
     if (scorePinchi >= 5 || scoreChimpi >= 5) {
@@ -348,7 +534,12 @@
       const isMe = (scorePinchi >= 5 && !isChimpiRole) || (scoreChimpi >= 5 && isChimpiRole);
       if (isMe && typeof dispararConfetiCanvas === 'function') dispararConfetiCanvas();
     } else {
-      resetPuck(scorer === 'pinchi' ? -1 : 1);
+      // Pausa breve de celebración y cuenta atrás de 3 segundos para el siguiente saque
+      setTimeout(() => {
+        if (!isGameOver) {
+          startCountdown(scorer === 'pinchi' ? -1 : 1);
+        }
+      }, 1000);
     }
   }
 
@@ -371,16 +562,22 @@
 
     // Porterías (Arcos de gol)
     ctx.fillStyle = '#ff6b81';
-    ctx.fillRect((W - GOAL_WIDTH) / 2, 0, GOAL_WIDTH, 6);
+    ctx.fillRect((W - GOAL_WIDTH) / 2, 0, GOAL_WIDTH, 7);
     ctx.fillStyle = '#70a1ff';
-    ctx.fillRect((W - GOAL_WIDTH) / 2, H - 6, GOAL_WIDTH, 6);
+    ctx.fillRect((W - GOAL_WIDTH) / 2, H - 7, GOAL_WIDTH, 7);
 
-    // Disco de hockey
+    // Disco de hockey con sombra
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+    ctx.beginPath();
+    ctx.arc(puck.x + 2, puck.y + 2, PUCK_RADIUS, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.fillStyle = '#2f3542';
     ctx.beginPath();
     ctx.arc(puck.x, puck.y, PUCK_RADIUS, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#1e272e';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
     // Mazo Chimpi 🐷 (Arriba)
@@ -405,6 +602,32 @@
     ctx.lineWidth = 3;
     ctx.stroke();
     ctx.fillText('🐧', malletPinchi.x, malletPinchi.y);
+
+    // Overlay visual de cuenta atrás (3, 2, 1, ¡YA!)
+    if (countdownText) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 25, 70, 0.38)';
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0, 120, 215, 0.7)';
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.arc(W / 2, H / 2, 44, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      ctx.strokeStyle = countdown === 0 ? '#e84393' : '#0078d7';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      ctx.fillStyle = countdown === 0 ? '#e84393' : '#0078d7';
+      ctx.font = countdown === 0 ? 'bold 22px sans-serif' : 'bold 44px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(countdownText, W / 2, H / 2);
+      ctx.restore();
+    }
   }
 
   window.restartAirHockeyGame = function() {
@@ -416,6 +639,8 @@
     if (!data || isGameOver) return;
     malletChimpi.x = data.x;
     malletChimpi.y = data.y;
+    if (typeof data.vx === 'number') malletChimpi.vx = data.vx;
+    if (typeof data.vy === 'number') malletChimpi.vy = data.vy;
   };
 
   window._handleRemoteHockeyState = function(data) {
@@ -426,6 +651,10 @@
     scoreChimpi = data.scoreGuest;
     if (data.malletPinchiX) malletPinchi.x = data.malletPinchiX;
     if (data.malletPinchiY) malletPinchi.y = data.malletPinchiY;
+    if (typeof data.countdown === 'number') {
+      countdown = data.countdown;
+      countdownText = data.countdownText || '';
+    }
 
     const sP = document.getElementById('hkScoreP');
     const sC = document.getElementById('hkScoreC');

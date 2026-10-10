@@ -40,6 +40,7 @@
     timeLeft = 12;
     isGameOver = false;
     clearAllTimers();
+    window._activeGameCleanup = clearAllTimers;
 
     if (content) {
       content.innerHTML = `
