@@ -45,7 +45,7 @@ c:\dev\cumple_pinchi_2025\
     ├── sw.js                   <-- Service Worker v2 con precache offline de minijuegos
     ├── delfin.fla              <-- Archivo Flash histórico original
     ├── resources/              <-- Audios (zumbido mp3, notificación), avatares, fotos e iconos
-    └── games/                  <-- 📂 Módulos individuales de cada uno de los 14 minijuegos
+    └── games/                  <-- 📂 Módulos individuales de cada uno de los 15 minijuegos
         ├── penguin.js          (1. Guerra de Pingüinos)
         ├── memory.js           (2. Reto de Memoria)
         ├── runner.js           (3. Salto Antártico)
@@ -92,8 +92,8 @@ Todos los minijuegos son táctiles, tienen sonido retro sintetizado (Web Audio A
 ## 🔧 5. El Orquestador (`msn/minigames.js`)
 
 Para evitar dependencias cruzadas y duplicidades:
-- **`MSN_GAMES_CATALOG`:** Array de objetos que define cada juego (`id`, `title`, `desc`, `icon`, `fn`).
-- **`openGamesHub()`:** Genera dinámicamente las tarjetas del menú y conecta los eventos de click.
+- **`MSN_GAMES_CATALOG`:** Array de objetos que define cada juego (`id`, `title`, `desc`, `icon`, `fn`). Los juegos que se deseen pausar del catálogo visual pueden marcarse con `hidden: true` sin eliminarse del código.
+- **`openGamesHub()`:** Genera dinámicamente las tarjetas del menú filtrando únicamente los juegos visibles (`!g.hidden`) y conecta los eventos de click.
 - **`closeGameModal()`:** Limpia con seguridad cualquier `_gameInterval`, `_spawnTimer` y `_animFrame` para que no se queden procesos en bucle en segundo plano.
 - **`playRetroTone(freq, type, duration)`:** Sintetizador con oscilador de audio (`AudioContext`) para sonidos sin requerir archivos mp3 externos.
 - **Seguridad en variables:** Se asignan a `window` de forma defensiva para evitar `SyntaxError: Identifier has already been declared`.
@@ -166,18 +166,14 @@ Implementado en `msn/live_chimpi.js` para permitir que Chimpi se conecte en dire
      - *Victoria y abandono:* El ganador recibe confeti y fanfarria; el perdedor, tono grave sin celebración. Si se cierra la ventana, se sincroniza el abandono en el chat.
    - **Conecta 4 MSN (Antártida vs Porqueriza):** Matriz de 6x7 con fichas 🐧 vs 🐷. Pinchi empieza siempre. Caída animada por gravedad, detección de 4 en raya (horizontal, vertical, diagonal), Web Audio (clack grave, victoria/derrota) y modo IA en solitario.
    - **Duelo de Reflejos MSN ("¿Quién da el Zumbido Primero?"):** Partida al mejor de 5 rondas. El host genera retardo aleatorio (2.5s-6s) con `BUZZ_PREPARE`. Al activarse, la pantalla parpadea en amarillo y suena el zumbido. Quien pulse antes comete falta (`BUZZ_FOUL`) y el punto va al rival. Con `.msn-shake` y respuesta háptica.
-   - **Pizarra MSN (NetMeeting / Pictionary Compartido):** Lienzo interactivo de 320x320 con coordenadas normalizadas relativas (0-1000). Barra de herramientas con lápiz, goma, 6 colores retro y borrado. 40 conceptos cómicos/íntimos a adivinar en 60 segundos con caja de texto e inversión de roles al acertar.
-   - **Guerra de Nieve (Duelo Táctico Simultáneo):** Selección en secreto en 5 segundos con resolución simultánea y triángulo de combate:
-     - ⚡ *Tiro Rápido (Velocidad):* 1 daño. Impacta de inmediato y cancela la Bomba del rival si la estaba cargando. Pierde contra el Escudo.
-     - 💣 *Bomba Parabólica (Potencia):* 2 daños. Vuela en arco y revienta el Escudo defensivo. Es lenta: pierde contra el Tiro Rápido.
-     - 🛡️ *Escudo / Refugio (Defensa):* Bloquea en seco el Tiro Rápido (0 daño). Pierde contra la Bomba Parabólica.
-     - En choques idénticos: choque de bolas en el aire (Tiro Rápido vs Tiro Rápido), bombardeo mutuo (-2 a ambos) o miradas desafiantes sin daño (Escudo vs Escudo).
-
-   - **Zampabollos MSN (Tug-of-War / Machaca-Botones):** Mesa con tarta y cuerda elástica en 12 segundos exactos. Botón gigante inferior, envío en ráfagas cada 100ms con `TUG_PULSE`. Posición de tarta: $50\% - (\text{clicksPinchi} - \text{clicksChimpi}) \times 1.5\%$. KO técnico automático en 5% o 95%, sonido de masticar y vibración por pulsación.
-   - **Desafío Telepático (Pareja Sincronizada):** 15 preguntas duales de pareja (A vs B). Voto secreto sincronizado vía WebRTC con tarjeta 3D volteable (`rotateY(360deg)`). +1 Afinidad al coincidir y diploma oficial de "Almas Gemelas Millennial" al alcanzar 7 aciertos.
-   - **Jeroglífico MSN (Duelo de Emojis Retro):** 3 rondas por turno. El emisor recibe una frase célebre o canción de los 2000s y escoge entre 2 y 5 emoticonos retro clásicos en un teclado virtual. El receptor ve los emojis flotando con animación y responde en un test de 4 opciones.
+   - **Pizarra MSN (NetMeeting / Pictionary Compartido):** Lienzo interactivo de 320x320 con coordenadas normalizadas relativas (0-1000). Barra de herramientas con lápiz, goma, 6 colores retro y borrado. 40 conceptos sencillos y cotidianos de una sola palabra (dibujos accesibles y fáciles de trazar en móvil, con tolerancia insensible a acentos/tildes) para adivinar en 60 segundos con caja de texto e inversión de roles al acertar.
    - **Air Hockey Polar (Mesa de Hielo MSN):** Simulación física determinista a 60fps en el Host (Pinchi) con masa de disco, rebotes en bordes y colisión elástica mazo-disco. Chimpi transmite la posición de su mazo (`HOCKEY_PADDLE`) y Pinchi difunde el estado a 30fps (`HOCKEY_STATE`). El primero en alcanzar 5 goles gana con sonido de silbato deportivo.
-   - **Ruleta de Pareja (Vales y Compromisos MSN):** Canvas circular con 8 divisiones pastel, puntero y aguja. Desaceleración cúbica idéntica sincronizada $\theta(t) = \text{targetAngle} \cdot (1 - (1 - t)^3)$ y sonido de carraca por sector. Al detenerse, estampa un "Vale Oficial Firmado" directamente en el chat principal de MSN.
+   - **Zampabollos MSN (Tug-of-War / Machaca-Botones):** Mesa con tarta y cuerda elástica en 12 segundos exactos. Botón gigante inferior, envío en ráfagas cada 100ms con `TUG_PULSE`. Posición de tarta: $50\% - (\text{clicksPinchi} - \text{clicksChimpi}) \times 1.5\%$. KO técnico automático en 5% o 95%, sonido de masticar y vibración por pulsación.
+   - **Minijuegos temporalmente ocultos del Salón de Juegos (conservados en el código con `hidden: true` en `MSN_GAMES_CATALOG`):**
+     - *Guerra de Nieve* (`msn/games/snowbattle.js`): Duelo táctico simultáneo (Tiro rápido, Bomba parabólica y Escudo defensivo).
+     - *Desafío Telepático* (`msn/games/synctest.js`): 15 preguntas duales de pareja con cartas 3D y diploma de almas gemelas.
+     - *Jeroglífico MSN* (`msn/games/rebus.js`): Adivinanzas de frases y canciones retro con emoticonos nostálgicos.
+     - *Ruleta de Pareja* (`msn/games/sharedwheel.js`): Ruleta animada con vales y compromisos que estampa vales en el chat.
 3. **Resiliencia de Conexión P2P (WebRTC):**
    - **Servidores STUN + TURN (ExpressTURN oficial) y Compatibilidad iOS Safari:** Soporte garantizado en redes móviles 4G/5G y operadores bajo CGNAT/NAT simétrico. Configurados servidores STUN (Google y Cloudflare para Wi-Fi directo) y TURN Relay (`free.expressturn.com` en puertos 3478 y 443 tanto en UDP como TCP), generando candidatos `relay` certificados para superar cortafuegos móviles. **Compatibilidad iOS Safari (iPhone):** En WebKit/Safari, la serialización por defecto de PeerJS (`BinaryPack`) corrompe los DataChannels; se ha forzado `serialization: 'json'` nativo en ambas partes y se ha añadido polling proactivo sobre `dataChannel.readyState === 'open'` para solventar la pérdida del evento `open` propia de iOS. **Seguridad y Git:** En local, las credenciales se cargan desde `msn/turn_config.local.js` (ignorado por `.gitignore`); para producción en GitHub Pages, el código contiene placeholders (`__EXPRESSTURN_...__`) que se inyectan al desplegar mediante GitHub Actions (`deploy.yml`) usando los secretos del repositorio (`TURN_USERNAME` y `TURN_PASSWORD`). Registro de candidatos en tiempo real en consola (`[WebRTC ICE Cand]`) y tolerancia de 10s ante estados transitorios `disconnected`. Timeout de negociación de 15s y `iceCandidatePoolSize: 10`.
    - **Heartbeat y Reconexión por Cambio de Red:** Heartbeat cada 3s (`pingInterval: 3000`) hacia el servidor PeerJS. Al detectar `online` (cambio real Wi-Fi ↔ 4G/5G) se hace un reinicio completo del peer con debounce de 1,5s; al volver a primer plano (`visibilitychange`) solo se reinicia si el peer está realmente caído. Nunca se interrumpe una sesión en directo abierta.

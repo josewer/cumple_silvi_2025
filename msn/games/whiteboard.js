@@ -4,16 +4,11 @@
 
 (function() {
   const SECRET_WORDS = [
-    "Pingüino enfadado", "Tarta quemada", "Siesta de 4 horas", "Cerdito comilón",
-    "Abrazo de oso", "Zumbido a las 3am", "Bocata de panceta", "Avril Lavigne",
-    "Playa con pingüinos", "Paseo en moto", "Cena romántica", "Helado de fresa",
-    "Gafas de sol", "Café con leche", "Despertador sonando", "Caja de bombones",
-    "Viaje a París", "Perrito caliente", "Palomitas de cine", "Besito de esquimal",
-    "Peluche gigante", "Flor rosa", "Guitarra rockera", "Carta de amor",
-    "Estrella fugaz", "Bailar bajo la lluvia", "Manta y sofá", "Risa floja",
-    "Corona de princesa", "Pastel de fresa", "Noche de videojuegos", "Cerdito volador",
-    "Corazón flechado", "Maleta de viaje", "Cámara de fotos", "Panceta crujiente",
-    "Superhéroe porcino", "Paraguas roto", "Ducha calentita", "Regalo sorpresa"
+    "Pingüino", "Cerdito", "Tarta", "Pizza", "Guitarra", "Corazón", "Sol", "Luna",
+    "Flor", "Coche", "Avión", "Barco", "Casa", "Árbol", "Helado", "Gato",
+    "Perro", "Reloj", "Estrella", "Nube", "Plátano", "Manzana", "Regalo", "Pez",
+    "Paraguas", "Sombrero", "Pelota", "Taza", "Teléfono", "Bicicleta", "Corona", "Vela",
+    "Gafas", "Mariposa", "Globo", "Queso", "Libro", "Cuchara", "Cámara", "Zapato"
   ];
 
   let isLiveGame = false;
@@ -394,10 +389,11 @@
   };
 
   function checkGuess(text) {
-    const cleanGuess = text.toLowerCase().trim();
-    const cleanTarget = currentWord.toLowerCase().trim();
+    const normalize = (s) => (s || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const cleanGuess = normalize(text);
+    const cleanTarget = normalize(currentWord);
 
-    if (cleanGuess === cleanTarget || (cleanGuess.length > 4 && cleanTarget.includes(cleanGuess))) {
+    if (cleanGuess === cleanTarget || (cleanGuess.length >= 3 && cleanTarget === cleanGuess)) {
       // ¡Acierto!
       clearInterval(timerInterval);
       const res = document.getElementById('wbResultMsg');

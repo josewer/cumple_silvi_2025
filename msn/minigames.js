@@ -231,7 +231,8 @@ var MSN_GAMES_CATALOG = [
     title: 'Guerra de Nieve',
     desc: 'Batalla táctica por turnos tras el iglú ❄️',
     icon: '❄️',
-    fn: 'openSnowBattleGame'
+    fn: 'openSnowBattleGame',
+    hidden: true
   },
   {
     id: 'tugofwar',
@@ -245,14 +246,16 @@ var MSN_GAMES_CATALOG = [
     title: 'Desafío Telepático',
     desc: 'Test sincronizado en secreto con diploma 🔮',
     icon: '🔮',
-    fn: 'openSyncTestGame'
+    fn: 'openSyncTestGame',
+    hidden: true
   },
   {
     id: 'rebus',
     title: 'Jeroglífico MSN',
     desc: 'Adivina canciones y frases con emojis retro 😎',
     icon: '😎',
-    fn: 'openRebusGame'
+    fn: 'openRebusGame',
+    hidden: true
   },
   {
     id: 'airhockey',
@@ -266,7 +269,8 @@ var MSN_GAMES_CATALOG = [
     title: 'Ruleta de Pareja',
     desc: 'Gira y sella vales y compromisos en el chat 🎡',
     icon: '🎡',
-    fn: 'openSharedWheelGame'
+    fn: 'openSharedWheelGame',
+    hidden: true
   }
 ];
 
@@ -284,7 +288,9 @@ function openGamesHub() {
 
   var liveGameIds = ['tictactoe', 'memory', 'battleship', 'connect4', 'buzzduel', 'whiteboard', 'snowbattle', 'tugofwar', 'synctest', 'rebus', 'airhockey', 'sharedwheel'];
 
-  var cardsHtml = MSN_GAMES_CATALOG.map(function(g) {
+  var visibleCatalog = MSN_GAMES_CATALOG.filter(function(g) { return !g.hidden; });
+
+  var cardsHtml = visibleCatalog.map(function(g) {
     var isLiveSupported = liveGameIds.indexOf(g.id) !== -1;
     var liveBadge = isLiveSupported ? '<span class="game-hub-badge-live">🟢 En línea</span>' : '';
     return (
@@ -308,7 +314,7 @@ function openGamesHub() {
         cardsHtml +
       '</div>';
 
-    MSN_GAMES_CATALOG.forEach(function(g) {
+    visibleCatalog.forEach(function(g) {
       var card = content.querySelector('[data-game-id="' + g.id + '"]');
       if (card) {
         card.addEventListener('click', function() {

@@ -1,5 +1,5 @@
-// Service Worker v42 - Soporte iOS Safari (JSON serialization y readyState check) + ExpressTURN (puertos 3478 y 443)
-const CACHE_NAME = 'msn-pinchi-v42';
+// Service Worker v43 - Catálogo de juegos optimizado (4 juegos ocultos) + Pizarra MSN con palabras simples
+const CACHE_NAME = 'msn-pinchi-v43';
 
 const CORE_ASSETS = [
   './',
