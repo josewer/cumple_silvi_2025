@@ -1,5 +1,8 @@
 # Antigravity Agent Guidelines - Cumpleaños Pinchi 2025
 
+## 📋 Regla de Planificación Previa
+- **Plan de Acción Obligatorio:** Antes de empezar a escribir código o realizar cualquier modificación en el repositorio, el agente **siempre** debe presentar un plan claro y detallado de lo que va a hacer para su aprobación.
+
 ## ⚠️ Reglas Críticas del Repositorio
 1. **PROHIBIDO EL USO DE `npm`:** Bajo ninguna circunstancia ejecutes comandos `npm` (`npm install`, `npm run`, etc.) ni añadas empaquetadores como Vite o Webpack. Todo el código debe ser Vanilla HTML5, Vanilla CSS3 y JavaScript nativo.
 2. **Identidad de los personajes:**
@@ -12,3 +15,4 @@
 4. **Offline & PWA:**
    - La aplicación debe funcionar offline como PWA en Android e iPhone.
    - El archivo de memoria detallado completo es `DOCUMENTACION_PROYECTO.md`.
+  

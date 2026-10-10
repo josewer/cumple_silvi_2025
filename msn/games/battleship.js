@@ -14,19 +14,23 @@
     { id: 'sub', name: 'Submarino Espía', size: 1, icon: '⚓' }
   ];
 
-  // Generar cuadrícula naval aleatoria con barcos sin colisión
-  function generateRandomFleet() {
+  // Generar cuadrícula naval aleatoria con barcos y colchón de agua obligatorio (zona de seguridad 1 casilla en 8 direcciones)
+  function tryGenerateRandomFleet() {
     const board = Array(BOARD_SIZE * BOARD_SIZE).fill(null);
     const ships = [];
 
     for (const spec of SHIPS_SPEC) {
       let placed = false;
       let attempts = 0;
-      while (!placed && attempts < 250) {
+      while (!placed && attempts < 150) {
         attempts++;
         const isHorizontal = Math.random() < 0.5;
-        const row = Math.floor(Math.random() * (isHorizontal ? BOARD_SIZE : BOARD_SIZE - spec.size + 1));
-        const col = Math.floor(Math.random() * (isHorizontal ? BOARD_SIZE - spec.size + 1 : BOARD_SIZE));
+        const maxR = isHorizontal ? BOARD_SIZE : BOARD_SIZE - spec.size + 1;
+        const maxC = isHorizontal ? BOARD_SIZE - spec.size + 1 : BOARD_SIZE;
+        if (maxR <= 0 || maxC <= 0) continue;
+
+        const row = Math.floor(Math.random() * maxR);
+        const col = Math.floor(Math.random() * maxC);
 
         const cells = [];
         let canPlace = true;
@@ -40,6 +44,24 @@
             canPlace = false;
             break;
           }
+
+          // Zona de seguridad de 1 casilla alrededor (horizontal, vertical y diagonal)
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              const nr = r + dr;
+              const nc = c + dc;
+              if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
+                const nIdx = nr * BOARD_SIZE + nc;
+                if (board[nIdx] !== null) {
+                  canPlace = false;
+                  break;
+                }
+              }
+            }
+            if (!canPlace) break;
+          }
+
+          if (!canPlace) break;
           cells.push(idx);
         }
 
@@ -56,8 +78,34 @@
           placed = true;
         }
       }
+
+      if (!placed) {
+        return null; // Reiniciar intento completo de tablero para no quedar en callejón sin salida
+      }
     }
+
     return { board, ships };
+  }
+
+  function getFallbackSafeFleet() {
+    // Configuración determinista de emergencia garantizada con colchón de agua total
+    const board = Array(BOARD_SIZE * BOARD_SIZE).fill(null);
+    const ships = [
+      { id: 'flagship', name: 'Acorazado Insignia', size: 3, icon: '🚢', cells: [0, 1, 2], hits: [] },
+      { id: 'cruiser', name: 'Fragata Veloz', size: 2, icon: '🛥️', cells: [5, 11], hits: [] },
+      { id: 'patrol', name: 'Lancha Guardacostas', size: 2, icon: '🚤', cells: [19, 20], hits: [] },
+      { id: 'sub', name: 'Submarino Espía', size: 1, icon: '⚓', cells: [34], hits: [] }
+    ];
+    ships.forEach(s => s.cells.forEach(idx => (board[idx] = s.id)));
+    return { board, ships };
+  }
+
+  function generateRandomFleet() {
+    for (let attempt = 0; attempt < 300; attempt++) {
+      const fleet = tryGenerateRandomFleet();
+      if (fleet) return fleet;
+    }
+    return getFallbackSafeFleet();
   }
 
   // Sonidos navales retro usando Web Audio API sintetizado
@@ -119,6 +167,17 @@
 
     if (title) title.textContent = '🚢 MSN Games - Hundir la Flota: Batalla Naval';
 
+    if (modal) {
+      var win = modal.querySelector('.game-window');
+      if (win) win.style.maxWidth = '520px';
+    }
+    if (content) {
+      content.style.padding = '8px 10px';
+      content.style.gap = '4px';
+      content.style.overflowY = 'hidden';
+      content.style.maxHeight = '95vh';
+    }
+
     const isLive = !forceSolo && !!(window._liveConnection && window._liveConnection.open);
     const isChimpi = !!window._isChimpiMode;
     const myName = isChimpi ? 'Chimpi' : 'Pinchi';
@@ -134,12 +193,12 @@
     let opponentReady = false;
     let gameStarted = false;
     let gameOver = false;
-    let currentTurn = '🐧'; // Pinchi siempre comienza de anfitriona
+    let currentTurn = null; // Se sortea aleatoriamente al comenzar la batalla
 
     // Registro de cuadrículas de disparos
-    // attackRadar[idx]: null | 'water' | 'hit'
+    // attackRadar[idx]: null | 'water' | 'hit' | 'sunk'
     const attackRadar = Array(BOARD_SIZE * BOARD_SIZE).fill(null);
-    // defenseShotsReceived[idx]: null | 'water' | 'hit'
+    // defenseShotsReceived[idx]: null | 'water' | 'hit' | 'sunk'
     const defenseShotsReceived = Array(BOARD_SIZE * BOARD_SIZE).fill(null);
 
     // IA Offline (Chimpi el Cerdito)
@@ -152,87 +211,99 @@
 
       content.innerHTML = `
         <style>
+          @keyframes bs-fire-pulse {
+            0% { transform: scale(1); filter: drop-shadow(0 0 2px #ffeb3b); }
+            50% { transform: scale(1.08); filter: drop-shadow(0 0 6px #ff5722); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 2px #ff9800); }
+          }
+          @keyframes bs-sunk-pulse {
+            0% { transform: scale(0.9); }
+            50% { transform: scale(1.1); filter: drop-shadow(0 0 8px #ff1744); }
+            100% { transform: scale(1); }
+          }
           .bs-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             width: 100%;
-            max-width: 440px;
+            max-width: 500px;
             margin: 0 auto;
             color: #111;
             font-family: inherit;
+            box-sizing: border-box;
           }
           .bs-header {
             text-align: center;
-            margin-bottom: 6px;
+            margin-bottom: 2px;
           }
           .bs-status-badge {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
-            padding: 5px 10px;
+            padding: 3px 8px;
             border-radius: 6px;
-            margin: 4px 0 8px 0;
+            margin: 2px 0 4px 0;
             display: inline-block;
             transition: all 0.2s;
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
           }
           .bs-boards-wrapper {
             display: flex;
-            flex-direction: column;
-            gap: 12px;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 10px;
             width: 100%;
-            align-items: center;
+            margin: 2px 0;
           }
-          @media (min-width: 480px) {
+          @media (max-width: 460px) {
             .bs-boards-wrapper {
-              flex-direction: row;
-              justify-content: center;
-              align-items: flex-start;
-              gap: 14px;
+              gap: 6px;
             }
           }
           .bs-board-card {
             background: #f8fbff;
             border: 1.5px solid #a4c9f5;
             border-radius: 8px;
-            padding: 8px;
+            padding: 5px 6px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.08);
             text-align: center;
+            box-sizing: border-box;
           }
           .bs-board-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             color: #004a9f;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 3px;
+            white-space: nowrap;
           }
           .bs-grid {
             display: grid;
-            grid-template-columns: repeat(6, 34px);
-            grid-template-rows: repeat(6, 34px);
-            gap: 3px;
+            grid-template-columns: repeat(6, 28px);
+            grid-template-rows: repeat(6, 28px);
+            gap: 2.5px;
             background: #002b5c;
-            padding: 4px;
+            padding: 3px;
             border-radius: 6px;
-            box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
           }
-          @media (max-width: 360px) {
+          @media (max-width: 440px) {
             .bs-grid {
-              grid-template-columns: repeat(6, 29px);
-              grid-template-rows: repeat(6, 29px);
+              grid-template-columns: repeat(6, 25px);
+              grid-template-rows: repeat(6, 25px);
               gap: 2px;
             }
           }
           .bs-cell {
             background: #0f4c81;
-            border-radius: 4px;
+            border-radius: 3px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             user-select: none;
             transition: background 0.15s, transform 0.1s;
@@ -243,32 +314,46 @@
           }
           .bs-cell.water {
             background: #2574a9 !important;
+            box-shadow: inset 0 0 3px rgba(0,0,0,0.2);
             cursor: default;
           }
           .bs-cell.hit {
-            background: #d9534f !important;
-            box-shadow: 0 0 6px #ff7675;
+            background: linear-gradient(135deg, #ff6b35, #e64a19) !important;
+            box-shadow: 0 0 6px #ff5722, inset 0 0 3px rgba(0,0,0,0.3) !important;
+            border: 1px solid #ffab91;
+            animation: bs-fire-pulse 1s infinite alternate;
+            cursor: default;
+          }
+          .bs-cell.sunk {
+            background: linear-gradient(135deg, #b71c1c, #263238) !important;
+            box-shadow: 0 0 8px rgba(255, 23, 68, 0.8), inset 0 0 4px rgba(0,0,0,0.6) !important;
+            border: 1.5px solid #ff5252 !important;
+            animation: bs-sunk-pulse 0.5s ease-out;
             cursor: default;
           }
           .bs-cell.ship {
             background: #2ecc71;
-            box-shadow: inset 0 0 4px rgba(0,0,0,0.3);
+            box-shadow: inset 0 0 3px rgba(0,0,0,0.3);
           }
           .bs-actions {
-            margin-top: 10px;
+            margin-top: 6px;
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
             justify-content: center;
           }
+          .bs-actions .msn-game-launch-btn {
+            padding: 4px 10px !important;
+            font-size: 11px !important;
+          }
         </style>
 
         <div class="bs-container">
           <div class="bs-header">
-            <div style="font-weight:bold;font-size:15px;">
+            <div style="font-weight:bold;font-size:14px;">
               🚢 Hundir la Flota: Pinchi (🐧) vs Chimpi (🐷)
             </div>
-            <div id="bsSubHeader" style="font-size:12px;color:#555;">
+            <div id="bsSubHeader" style="font-size:11px;color:#555;">
               ${isLive ? '<b style="color:#28a745;">🟢 ¡BATALLA NAVAL EN DIRECTO REAL!</b>' : '👤 Modo Entrenamiento vs Chimpi (IA)'}
             </div>
             <div id="bsStatusBadge" class="bs-status-badge" style="background:#eef6ff;color:#0078d7;border:1px solid #70a1ff;">
@@ -276,15 +361,15 @@
             </div>
           </div>
 
-          <div id="bsSetupControls" style="margin-bottom:8px;text-align:center;">
-            <div style="font-size:12px;color:#444;margin-bottom:6px;">
+          <div id="bsSetupControls" style="margin-bottom:4px;text-align:center;">
+            <div style="font-size:11px;color:#444;margin-bottom:4px;">
               Reorganiza tus 4 barcos con el botón o confirma para empezar:
             </div>
-            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-              <button id="bsRerollFleetBtn" class="msn-game-launch-btn" style="padding:5px 12px;font-size:12px;background:#17a2b8;">
+            <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+              <button id="bsRerollFleetBtn" class="msn-game-launch-btn" style="padding:4px 10px;font-size:11px;background:#17a2b8;">
                 🎲 Barajar Flota
               </button>
-              <button id="bsReadyBtn" class="msn-game-launch-btn" style="padding:6px 14px;font-size:13px;font-weight:bold;background:#28a745;">
+              <button id="bsReadyBtn" class="msn-game-launch-btn" style="padding:5px 12px;font-size:12px;font-weight:bold;background:#28a745;">
                 ⚓ ¡Zarpar a la Batalla!
               </button>
             </div>
@@ -297,7 +382,7 @@
                 🎯 Radar de Ataque (${opponentName} ${opponentSymbol})
               </div>
               <div class="bs-grid" id="bsRadarGrid"></div>
-              <div style="font-size:11px;color:#666;margin-top:4px;">
+              <div style="font-size:10px;color:#666;margin-top:3px;">
                 Toca una casilla para disparar torpedo 🚀
               </div>
             </div>
@@ -308,14 +393,14 @@
                 🛡️ Tu Flota (${myName} ${mySymbol})
               </div>
               <div class="bs-grid" id="bsDefenseGrid"></div>
-              <div id="bsDefenseSubtext" style="font-size:11px;color:#666;margin-top:4px;">
-                4 barcos preparados (8 casillas totales)
+              <div id="bsDefenseSubtext" style="font-size:10px;color:#666;margin-top:3px;">
+                4 barcos preparados (8 casillas)
               </div>
             </div>
           </div>
 
           <div class="bs-actions">
-            <button class="msn-game-launch-btn" style="padding:5px 12px;font-size:12px;background:#6c757d;" onclick="if(window.restartLiveBattleshipGame) window.restartLiveBattleshipGame(); else openBattleshipGame();">
+            <button class="msn-game-launch-btn" style="background:#6c757d;" onclick="if(window.restartLiveBattleshipGame) window.restartLiveBattleshipGame(); else openBattleshipGame();">
               Reiniciar Batalla 🔄
             </button>
             ${typeof hubBackBtnHtml === 'function' ? hubBackBtnHtml() : ''}
@@ -379,7 +464,7 @@
           badge.innerHTML = `🔔 ¡<b>${opponentName}</b> ya está listo! Confirma tu flota para zarpar.`;
         }
       } else {
-        updateBattleTurnUI();
+        updateBattleTurnUI(false);
       }
     }
 
@@ -387,6 +472,18 @@
       if (myReady && opponentReady && !gameStarted) {
         gameStarted = true;
         playSonarPing();
+
+        // 1. Elección aleatoria de quién abre fuego (50% Pinchi 🐧 / 50% Chimpi 🐷)
+        if (isLive) {
+          if (!isChimpi) {
+            // Pinchi (anfitriona) realiza el sorteo y lo transmite al rival por WebRTC
+            currentTurn = Math.random() < 0.5 ? '🐧' : '🐷';
+            sendLiveMsg({ type: 'bs_start_turn', firstTurn: currentTurn });
+          }
+        } else {
+          // Modo offline vs IA
+          currentTurn = Math.random() < 0.5 ? '🐧' : '🐷';
+        }
 
         // Ocultar controles de preparación y mostrar radar de ataque
         const setupControls = document.getElementById('bsSetupControls');
@@ -399,25 +496,40 @@
         if (defenseSubtext) defenseSubtext.textContent = 'Observa los torpedos del rival aquí 🌊';
 
         drawRadarBoard();
-        updateBattleTurnUI();
+        updateBattleTurnUI(true);
+
+        // Si en solitario el sorteo favorece a Chimpi IA, Chimpi abre fuego
+        if (!isLive && currentTurn === '🐷') {
+          setTimeout(aiTakeTurn, 1200);
+        }
       }
     }
 
-    function updateBattleTurnUI() {
+    function updateBattleTurnUI(isInitial) {
       const badge = document.getElementById('bsStatusBadge');
       if (!badge || gameOver) return;
 
+      if (!currentTurn) {
+        badge.style.background = '#eef6ff';
+        badge.style.color = '#0078d7';
+        badge.style.borderColor = '#70a1ff';
+        badge.innerHTML = `🎲 Sorteando turno de combate...`;
+        return;
+      }
+
       const isMyTurn = currentTurn === mySymbol;
+      const starterPrefix = isInitial ? '🎲 <b>¡Sorteo inicial!</b> ' : '';
+
       if (isMyTurn) {
         badge.style.background = '#d4edda';
         badge.style.color = '#155724';
         badge.style.borderColor = '#c3e6cb';
-        badge.innerHTML = `✨ <b>¡Tu turno de disparo, ${myName}!</b> Elige una coordenada en el radar 🎯`;
+        badge.innerHTML = `${starterPrefix}✨ <b>¡Tu turno de disparo, ${myName}!</b> Elige una coordenada en el radar 🎯`;
       } else {
         badge.style.background = '#f8f9fa';
         badge.style.color = '#6c757d';
         badge.style.borderColor = '#dee2e6';
-        badge.innerHTML = `⏳ <b>Turno de ${opponentName} ${opponentSymbol}</b> (Apuntando sus torpedos...)`;
+        badge.innerHTML = `${starterPrefix}⏳ <b>Turno de ${opponentName} ${opponentSymbol}</b> (Apuntando sus torpedos...)`;
       }
     }
 
@@ -433,9 +545,12 @@
         const shipId = myFleet.board[i];
         const shotState = defenseShotsReceived[i];
 
-        if (shotState === 'hit') {
-          cell.className += ' hit';
+        if (shotState === 'sunk') {
+          cell.className += ' sunk';
           cell.innerHTML = '💥';
+        } else if (shotState === 'hit') {
+          cell.className += ' hit';
+          cell.innerHTML = '🔥';
         } else if (shotState === 'water') {
           cell.className += ' water';
           cell.innerHTML = '💧';
@@ -460,9 +575,12 @@
         cell.className = 'bs-cell';
         const shot = attackRadar[i];
 
-        if (shot === 'hit') {
-          cell.className += ' hit';
+        if (shot === 'sunk') {
+          cell.className += ' sunk';
           cell.innerHTML = '💥';
+        } else if (shot === 'hit') {
+          cell.className += ' hit';
+          cell.innerHTML = '🔥';
         } else if (shot === 'water') {
           cell.className += ' water';
           cell.innerHTML = '💧';
@@ -498,6 +616,7 @@
       const shipId = aiFleet.board[idx];
       let result = 'water';
       let sunkShipName = null;
+      let sunkShipCells = null;
 
       if (shipId) {
         result = 'hit';
@@ -508,13 +627,16 @@
           if (shipObj.hits.length === shipObj.size) {
             result = 'sunk';
             sunkShipName = shipObj.name;
+            sunkShipCells = shipObj.cells;
+            // Todas las casillas del barco pasan a estado 'sunk'
+            shipObj.cells.forEach(c => (attackRadar[c] = 'sunk'));
           }
         }
       } else {
         attackRadar[idx] = 'water';
       }
 
-      applyShotResultOnRadar(idx, result, sunkShipName);
+      applyShotResultOnRadar(idx, result, sunkShipName, sunkShipCells);
 
       // Comprobar fin de partida offline
       const allSunk = aiFleet.ships.every(s => s.hits.length === s.size);
@@ -523,35 +645,55 @@
         return;
       }
 
-      // Si fue agua, pasa el turno a Chimpi IA; si fue tocado, el jugador repite disparo
+      // Si fue agua, pasa el turno a Chimpi IA; si fue tocado/hundido, el jugador repite disparo
       if (result === 'water') {
         currentTurn = '🐷';
-        updateBattleTurnUI();
+        updateBattleTurnUI(false);
         setTimeout(aiTakeTurn, 1000);
       }
     }
 
-    function applyShotResultOnRadar(idx, result, sunkShipName) {
-      attackRadar[idx] = result === 'water' ? 'water' : 'hit';
+    function applyShotResultOnRadar(idx, result, sunkShipName, sunkShipCells) {
+      if (result === 'sunk') {
+        if (Array.isArray(sunkShipCells)) {
+          sunkShipCells.forEach(c => (attackRadar[c] = 'sunk'));
+        } else {
+          attackRadar[idx] = 'sunk';
+        }
+      } else if (result === 'hit') {
+        attackRadar[idx] = 'hit';
+      } else {
+        attackRadar[idx] = 'water';
+      }
+
       drawRadarBoard();
 
       if (result === 'water') {
         playWaterSplash();
         const badge = document.getElementById('bsStatusBadge');
         if (badge && !gameOver) {
+          badge.style.background = '#eef6ff';
+          badge.style.color = '#0056b3';
+          badge.style.borderColor = '#b8daff';
           badge.innerHTML = `💧 ¡Agua! El torpedo cayó al mar. Pasa el turno.`;
         }
       } else if (result === 'sunk') {
         playShipSunkFanfare();
         const badge = document.getElementById('bsStatusBadge');
         if (badge && !gameOver) {
+          badge.style.background = '#f8d7da';
+          badge.style.color = '#721c24';
+          badge.style.borderColor = '#f5c6cb';
           badge.innerHTML = `💥 ¡HUNDIDO! ¡Has destruido el <b>${sunkShipName || 'barco'}</b> enemigo! 🚀 Repites turno.`;
         }
       } else {
         playExplosionHit();
         const badge = document.getElementById('bsStatusBadge');
         if (badge && !gameOver) {
-          badge.innerHTML = `🔥 ¡TOCADO! ¡Impacto directo en barco enemigo! 🚀 Repites turno.`;
+          badge.style.background = '#fff3cd';
+          badge.style.color = '#856404';
+          badge.style.borderColor = '#ffeeba';
+          badge.innerHTML = `🔥 ¡TOCADO! ¡Fuego en un barco enemigo! 🚀 Repites turno.`;
         }
       }
     }
@@ -575,11 +717,27 @@
 
       const shipId = myFleet.board[targetIdx];
       let result = 'water';
+      let sunkShipName = null;
 
       if (shipId) {
         result = 'hit';
         defenseShotsReceived[targetIdx] = 'hit';
-        playExplosionHit();
+
+        const shipObj = myFleet.ships.find(s => s.id === shipId);
+        if (shipObj) {
+          shipObj.hits.push(targetIdx);
+          if (shipObj.hits.length === shipObj.size) {
+            result = 'sunk';
+            sunkShipName = shipObj.name;
+            // Marcar todas las casillas del barco hundido como 'sunk'
+            shipObj.cells.forEach(c => (defenseShotsReceived[c] = 'sunk'));
+            playShipSunkFanfare();
+          } else {
+            playExplosionHit();
+          }
+        } else {
+          playExplosionHit();
+        }
 
         // Si acierta, busca en las 4 direcciones vecinas
         const r = Math.floor(targetIdx / BOARD_SIZE);
@@ -601,7 +759,7 @@
 
       // Comprobar si toda la flota del jugador ha sido destruida
       const myAllSunk = myFleet.ships.every(s =>
-        s.cells.every(c => defenseShotsReceived[c] === 'hit')
+        s.cells.every(c => defenseShotsReceived[c] === 'sunk' || defenseShotsReceived[c] === 'hit')
       );
 
       if (myAllSunk) {
@@ -609,13 +767,27 @@
         return;
       }
 
-      if (result === 'hit') {
-        // La IA repite turno al acertar
+      if (result === 'hit' || result === 'sunk') {
+        const badge = document.getElementById('bsStatusBadge');
+        if (badge && !gameOver) {
+          if (result === 'sunk') {
+            badge.style.background = '#f8d7da';
+            badge.style.color = '#721c24';
+            badge.style.borderColor = '#f5c6cb';
+            badge.innerHTML = `💥 ¡Chimpi ha hundido tu <b>${sunkShipName || 'barco'}</b>! 🐷 Chimpi repite turno...`;
+          } else {
+            badge.style.background = '#fff3cd';
+            badge.style.color = '#856404';
+            badge.style.borderColor = '#ffeeba';
+            badge.innerHTML = `🔥 ¡Chimpi ha tocado uno de tus barcos! 🐷 Chimpi repite turno...`;
+          }
+        }
+        // La IA repite turno al acertar o hundir
         setTimeout(aiTakeTurn, 1000);
       } else {
         // Vuelve el turno a Pinchi
         currentTurn = '🐧';
-        updateBattleTurnUI();
+        updateBattleTurnUI(false);
       }
     }
 
@@ -658,12 +830,20 @@
       checkBothReady();
     };
 
+    window._handleRemoteBattleshipStartTurn = function (data) {
+      if (data && data.firstTurn) {
+        currentTurn = data.firstTurn;
+        updateBattleTurnUI(true);
+      }
+    };
+
     window._handleRemoteBattleshipShot = function (data) {
       if (!gameStarted || gameOver) return;
       const idx = data.cellIdx;
       const shipId = myFleet.board[idx];
       let result = 'water';
       let sunkShipName = null;
+      let sunkShipCells = null;
 
       if (shipId) {
         result = 'hit';
@@ -674,9 +854,15 @@
           if (shipObj.hits.length === shipObj.size) {
             result = 'sunk';
             sunkShipName = shipObj.name;
+            sunkShipCells = shipObj.cells;
+            shipObj.cells.forEach(c => (defenseShotsReceived[c] = 'sunk'));
+            playShipSunkFanfare();
+          } else {
+            playExplosionHit();
           }
+        } else {
+          playExplosionHit();
         }
-        playExplosionHit();
       } else {
         defenseShotsReceived[idx] = 'water';
         playWaterSplash();
@@ -685,7 +871,7 @@
       drawDefenseBoard();
 
       const allMySunk = myFleet.ships.every(s =>
-        s.cells.every(c => defenseShotsReceived[c] === 'hit')
+        s.cells.every(c => defenseShotsReceived[c] === 'sunk' || defenseShotsReceived[c] === 'hit')
       );
 
       // Siguiente turno: si acierta repite el tirador; si falla, pasa al defensor
@@ -698,6 +884,7 @@
         cellIdx: idx,
         result: result,
         sunkShipName: sunkShipName,
+        sunkShipCells: sunkShipCells,
         allSunk: allMySunk,
         nextTurn: nextTurn
       });
@@ -705,19 +892,19 @@
       if (allMySunk) {
         handleGameOver(opponentSymbol);
       } else {
-        updateBattleTurnUI();
+        updateBattleTurnUI(false);
       }
     };
 
     window._handleRemoteBattleshipShotResult = function (data) {
       if (!gameStarted || gameOver) return;
-      applyShotResultOnRadar(data.cellIdx, data.result, data.sunkShipName);
+      applyShotResultOnRadar(data.cellIdx, data.result, data.sunkShipName, data.sunkShipCells);
 
       if (data.allSunk) {
         handleGameOver(mySymbol);
       } else {
         currentTurn = data.nextTurn;
-        updateBattleTurnUI();
+        updateBattleTurnUI(false);
       }
     };
 

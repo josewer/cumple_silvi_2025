@@ -19,7 +19,18 @@ function closeGameModal(isRemoteClose) {
   // (evita que eventos MouseEvent de onclick se confundan con remoto)
   var isRemote = (isRemoteClose === true);
   var modal = window.gameModal || document.getElementById('gameModal');
-  if (modal) modal.style.display = 'none';
+  if (modal) {
+    modal.style.display = 'none';
+    var win = modal.querySelector('.game-window');
+    if (win) win.style.maxWidth = '';
+  }
+  var content = window.gameContent || document.getElementById('gameContent');
+  if (content) {
+    content.style.padding = '';
+    content.style.gap = '';
+    content.style.overflowY = '';
+    content.style.maxHeight = '';
+  }
 
   // Si se abandona una partida activa en vivo por parte del usuario local:
   if (!isRemote && window._activeLiveGame) {
@@ -183,6 +194,69 @@ var MSN_GAMES_CATALOG = [
     desc: 'Batalla naval 6x6: Radar, torpedos y barcos en vivo',
     icon: '🚢',
     fn: 'openBattleshipGame'
+  },
+  {
+    id: 'connect4',
+    title: 'Conecta 4 MSN',
+    desc: 'Antártida vs Porqueriza: 4 en raya 🔴🔵',
+    icon: '🔴🔵',
+    fn: 'openConnect4Game'
+  },
+  {
+    id: 'buzzduel',
+    title: 'Duelo de Zumbidos',
+    desc: '¿Quién zumba primero? Reflejos al mejor de 5 ⚡',
+    icon: '⚡',
+    fn: 'openBuzzDuelGame'
+  },
+  {
+    id: 'whiteboard',
+    title: 'Pizarra MSN',
+    desc: 'Pizarra NetMeeting: Dibuja y adivina 40 palabras 🎨',
+    icon: '🎨',
+    fn: 'openWhiteboardGame'
+  },
+  {
+    id: 'snowbattle',
+    title: 'Guerra de Nieve',
+    desc: 'Batalla táctica por turnos tras el iglú ❄️',
+    icon: '❄️',
+    fn: 'openSnowBattleGame'
+  },
+  {
+    id: 'tugofwar',
+    title: 'Zampabollos MSN',
+    desc: 'Machaca el botón en 12s para ganar la tarta 🎂',
+    icon: '🎂',
+    fn: 'openTugOfWarGame'
+  },
+  {
+    id: 'synctest',
+    title: 'Desafío Telepático',
+    desc: 'Test sincronizado en secreto con diploma 🔮',
+    icon: '🔮',
+    fn: 'openSyncTestGame'
+  },
+  {
+    id: 'rebus',
+    title: 'Jeroglífico MSN',
+    desc: 'Adivina canciones y frases con emojis retro 😎',
+    icon: '😎',
+    fn: 'openRebusGame'
+  },
+  {
+    id: 'airhockey',
+    title: 'Air Hockey MSN',
+    desc: 'Mesa de hielo polar: Primero a 5 goles 🏒',
+    icon: '🏒',
+    fn: 'openAirHockeyGame'
+  },
+  {
+    id: 'sharedwheel',
+    title: 'Ruleta de Pareja',
+    desc: 'Gira y sella vales y compromisos en el chat 🎡',
+    icon: '🎡',
+    fn: 'openSharedWheelGame'
   }
 ];
 
@@ -210,7 +284,7 @@ function openGamesHub() {
     );
   }).join('');
 
-  var isLive = !!(window._liveConnection && window._liveConnection.open);
+  var isLive = !!((window.liveChimpi && window.liveChimpi.conn && window.liveChimpi.conn.open) || (window._liveConnection && window._liveConnection.open));
   var isChimpi = !!window._isChimpiMode;
   var opponentName = isChimpi ? 'Pinchi 🐧' : 'Chimpi 🐷';
 
@@ -222,14 +296,20 @@ function openGamesHub() {
           '🟢 ¡CONEXIÓN EN DIRECTO CON ' + opponentName.toUpperCase() + '! 💖' +
         '</div>' +
         '<div style="font-size:12px;color:#333;margin-bottom:8px;">' +
-          'Toca un botón para enviarle una invitación de juego al chat:' +
+          'Toca cualquier juego para jugar juntos en directo o enviar una invitación:' +
         '</div>' +
-        '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">' +
-          '<button class="msn-game-launch-btn" style="background:#0078d7;padding:6px 12px;font-size:12px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'tictactoe\');">' +
-            '📨 Invitar a Tres en Raya ❌⭕' +
+        '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">' +
+          '<button class="msn-game-launch-btn" style="background:#0078d7;padding:5px 10px;font-size:11px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'connect4\');">' +
+            '📨 Conecta 4 🔴🔵' +
           '</button>' +
-          '<button class="msn-game-launch-btn" style="background:#28a745;padding:6px 12px;font-size:12px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'memory\');">' +
-            '📨 Invitar a Memoria 🧠' +
+          '<button class="msn-game-launch-btn" style="background:#e17055;padding:5px 10px;font-size:11px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'buzzduel\');">' +
+            '📨 Zumbidos ⚡' +
+          '</button>' +
+          '<button class="msn-game-launch-btn" style="background:#0984e3;padding:5px 10px;font-size:11px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'airhockey\');">' +
+            '📨 Air Hockey 🏒' +
+          '</button>' +
+          '<button class="msn-game-launch-btn" style="background:#28a745;padding:5px 10px;font-size:11px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'sharedwheel\');">' +
+            '📨 Ruleta 🎡' +
           '</button>' +
         '</div>' +
       '</div>';
@@ -246,6 +326,8 @@ function openGamesHub() {
       '</div>';
 
     // Asignar listeners a cada tarjeta
+    var liveGameIds = ['tictactoe', 'memory', 'battleship', 'connect4', 'buzzduel', 'whiteboard', 'snowbattle', 'tugofwar', 'synctest', 'rebus', 'airhockey', 'sharedwheel'];
+
     MSN_GAMES_CATALOG.forEach(function(g) {
       var card = content.querySelector('[data-game-id="' + g.id + '"]');
       if (card) {
@@ -253,8 +335,8 @@ function openGamesHub() {
           playRetroTone(440, 'triangle', 0.08);
 
           // Si el juego soporta modo Live y estamos en conexión P2P activa
-          var isLive = window._liveConnection && window._liveConnection.open;
-          if (isLive && (g.id === 'tictactoe' || g.id === 'memory' || g.id === 'battleship')) {
+          var conn = (window.liveChimpi && window.liveChimpi.conn && window.liveChimpi.conn.open) ? window.liveChimpi.conn : (window._liveConnection && window._liveConnection.open ? window._liveConnection : null);
+          if (conn && liveGameIds.indexOf(g.id) !== -1) {
             showLiveGameChoice(g);
             return;
           }

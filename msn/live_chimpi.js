@@ -16,6 +16,9 @@
   let heartbeatInterval = null;
 
   window._liveConnection = null;
+  window.liveChimpi = {
+    get conn() { return (activeConn && activeConn.open) ? activeConn : (window._liveConnection && window._liveConnection.open ? window._liveConnection : null); }
+  };
   window._isChimpiMode = isChimpiMode;
   window._botSilenced = true; // Por defecto cuando está en vivo, el bot nosti está silenciado
 
@@ -549,7 +552,13 @@
 
         case 'bs_ready':
           if (typeof window._handleRemoteBattleshipReady === 'function') {
-            window._handleRemoteBattleshipReady();
+            window._handleRemoteBattleshipReady(data);
+          }
+          break;
+
+        case 'bs_start_turn':
+          if (typeof window._handleRemoteBattleshipStartTurn === 'function') {
+            window._handleRemoteBattleshipStartTurn(data);
           }
           break;
 
@@ -565,16 +574,78 @@
           }
           break;
 
+        // --- EXPANSIONES MULTIJUGADOR MSN ---
+        case 'C4_DROP':
+          if (typeof window._handleRemoteConnect4Drop === 'function') window._handleRemoteConnect4Drop(data);
+          break;
+        case 'C4_RESTART':
+          if (typeof window._handleRemoteConnect4Restart === 'function') window._handleRemoteConnect4Restart();
+          break;
+
+        case 'BUZZ_PREPARE':
+          if (typeof window._handleRemoteBuzzPrepare === 'function') window._handleRemoteBuzzPrepare(data);
+          break;
+        case 'BUZZ_HIT':
+          if (typeof window._handleRemoteBuzzHit === 'function') window._handleRemoteBuzzHit(data);
+          break;
+        case 'BUZZ_FOUL':
+          if (typeof window._handleRemoteBuzzFoul === 'function') window._handleRemoteBuzzFoul(data);
+          break;
+
+        case 'WB_DRAW':
+          if (typeof window._handleRemoteWhiteboardDraw === 'function') window._handleRemoteWhiteboardDraw(data);
+          break;
+        case 'WB_CLEAR':
+          if (typeof window._handleRemoteWhiteboardClear === 'function') window._handleRemoteWhiteboardClear();
+          break;
+        case 'WB_GUESS':
+          if (typeof window._handleRemoteWhiteboardGuess === 'function') window._handleRemoteWhiteboardGuess(data);
+          break;
+        case 'WB_GUESS_CORRECT':
+          if (typeof window._handleRemoteWhiteboardCorrect === 'function') window._handleRemoteWhiteboardCorrect(data);
+          break;
+
+        case 'SNOW_ACTION':
+          if (typeof window._handleRemoteSnowAction === 'function') window._handleRemoteSnowAction(data);
+          break;
+
+        case 'TUG_PULSE':
+          if (typeof window._handleRemoteTugPulse === 'function') window._handleRemoteTugPulse(data);
+          break;
+
+        case 'SYNC_VOTE':
+          if (typeof window._handleRemoteSyncVote === 'function') window._handleRemoteSyncVote(data);
+          break;
+
+        case 'REBUS_SEND':
+          if (typeof window._handleRemoteRebusSend === 'function') window._handleRemoteRebusSend(data);
+          break;
+
+        case 'HOCKEY_PADDLE':
+          if (typeof window._handleRemoteHockeyPaddle === 'function') window._handleRemoteHockeyPaddle(data);
+          break;
+        case 'HOCKEY_STATE':
+          if (typeof window._handleRemoteHockeyState === 'function') window._handleRemoteHockeyState(data);
+          break;
+
+        case 'WHEEL_SPIN':
+          if (typeof window._handleRemoteWheelSpin === 'function') window._handleRemoteWheelSpin(data);
+          break;
+
         case 'open_game':
-          if (data.game === 'tictactoe' && typeof openTicTacToeGame === 'function') {
-            openTicTacToeGame();
-          } else if (data.game === 'memory' && typeof openMemoryGame === 'function') {
-            openMemoryGame(data.deckItemIds, data.startingTurn, true);
-          } else if (data.game === 'battleship' && typeof openBattleshipGame === 'function') {
-            openBattleshipGame();
-          } else if (typeof openGamesHub === 'function') {
-            openGamesHub();
-          }
+          if (data.game === 'tictactoe' && typeof openTicTacToeGame === 'function') openTicTacToeGame();
+          else if (data.game === 'memory' && typeof openMemoryGame === 'function') openMemoryGame(data.deckItemIds, data.startingTurn, true);
+          else if (data.game === 'battleship' && typeof openBattleshipGame === 'function') openBattleshipGame();
+          else if (data.game === 'connect4' && typeof openConnect4Game === 'function') openConnect4Game();
+          else if (data.game === 'buzzduel' && typeof openBuzzDuelGame === 'function') openBuzzDuelGame();
+          else if (data.game === 'whiteboard' && typeof openWhiteboardGame === 'function') openWhiteboardGame();
+          else if (data.game === 'snowbattle' && typeof openSnowBattleGame === 'function') openSnowBattleGame();
+          else if (data.game === 'tugofwar' && typeof openTugOfWarGame === 'function') openTugOfWarGame();
+          else if (data.game === 'synctest' && typeof openSyncTestGame === 'function') openSyncTestGame();
+          else if (data.game === 'rebus' && typeof openRebusGame === 'function') openRebusGame();
+          else if (data.game === 'airhockey' && typeof openAirHockeyGame === 'function') openAirHockeyGame();
+          else if (data.game === 'sharedwheel' && typeof openSharedWheelGame === 'function') openSharedWheelGame();
+          else if (typeof openGamesHub === 'function') openGamesHub();
           break;
 
         case 'set_bot':
@@ -741,7 +812,16 @@
     const gameMap = {
       tictactoe: { title: 'Tres en Raya MSN', icon: '❌⭕' },
       memory: { title: 'Reto de Memoria', icon: '🧠' },
-      battleship: { title: 'Hundir la Flota', icon: '🚢' }
+      battleship: { title: 'Hundir la Flota', icon: '🚢' },
+      connect4: { title: 'Conecta 4 MSN', icon: '🔴🔵' },
+      buzzduel: { title: 'Duelo de Zumbidos', icon: '⚡' },
+      whiteboard: { title: 'Pizarra MSN', icon: '🎨' },
+      snowbattle: { title: 'Guerra de Nieve', icon: '❄️' },
+      tugofwar: { title: 'Zampabollos MSN', icon: '🎂' },
+      synctest: { title: 'Desafío Telepático', icon: '🔮' },
+      rebus: { title: 'Jeroglífico MSN', icon: '😎' },
+      airhockey: { title: 'Air Hockey MSN', icon: '🏒' },
+      sharedwheel: { title: 'Ruleta de Pareja', icon: '🎡' }
     };
     const g = gameMap[gameId] || { title: 'Juego MSN', icon: '🎮' };
     const inviteId = 'inv_' + Date.now();
@@ -855,13 +935,18 @@
     if (accepted) {
       if (typeof playRetroTone === 'function') playRetroTone(550, 'triangle', 0.15);
       setTimeout(() => {
-        if (gameId === 'tictactoe' && typeof openTicTacToeGame === 'function') {
-          openTicTacToeGame();
-        } else if (gameId === 'memory' && typeof openMemoryGame === 'function') {
-          openMemoryGame(window._incomingInviteDeck, '🐧', true);
-        } else if (gameId === 'battleship' && typeof openBattleshipGame === 'function') {
-          openBattleshipGame();
-        }
+        if (gameId === 'tictactoe' && typeof openTicTacToeGame === 'function') openTicTacToeGame();
+        else if (gameId === 'memory' && typeof openMemoryGame === 'function') openMemoryGame(window._incomingInviteDeck, '🐧', true);
+        else if (gameId === 'battleship' && typeof openBattleshipGame === 'function') openBattleshipGame();
+        else if (gameId === 'connect4' && typeof openConnect4Game === 'function') openConnect4Game();
+        else if (gameId === 'buzzduel' && typeof openBuzzDuelGame === 'function') openBuzzDuelGame();
+        else if (gameId === 'whiteboard' && typeof openWhiteboardGame === 'function') openWhiteboardGame();
+        else if (gameId === 'snowbattle' && typeof openSnowBattleGame === 'function') openSnowBattleGame();
+        else if (gameId === 'tugofwar' && typeof openTugOfWarGame === 'function') openTugOfWarGame();
+        else if (gameId === 'synctest' && typeof openSyncTestGame === 'function') openSyncTestGame();
+        else if (gameId === 'rebus' && typeof openRebusGame === 'function') openRebusGame();
+        else if (gameId === 'airhockey' && typeof openAirHockeyGame === 'function') openAirHockeyGame();
+        else if (gameId === 'sharedwheel' && typeof openSharedWheelGame === 'function') openSharedWheelGame();
       }, 400);
     }
   };
@@ -880,14 +965,18 @@
       if (navigator.vibrate) try { navigator.vibrate([80, 50, 80]); } catch (e) {}
 
       setTimeout(() => {
-        if (data.gameId === 'tictactoe' && typeof openTicTacToeGame === 'function') {
-          openTicTacToeGame();
-        } else if (data.gameId === 'memory' && typeof openMemoryGame === 'function') {
-          const syncDeck = data.deckItemIds || window._lastInviteDeck;
-          openMemoryGame(syncDeck, '🐧', false);
-        } else if (data.gameId === 'battleship' && typeof openBattleshipGame === 'function') {
-          openBattleshipGame();
-        }
+        if (data.gameId === 'tictactoe' && typeof openTicTacToeGame === 'function') openTicTacToeGame();
+        else if (data.gameId === 'memory' && typeof openMemoryGame === 'function') openMemoryGame(data.deckItemIds || window._lastInviteDeck, '🐧', false);
+        else if (data.gameId === 'battleship' && typeof openBattleshipGame === 'function') openBattleshipGame();
+        else if (data.gameId === 'connect4' && typeof openConnect4Game === 'function') openConnect4Game();
+        else if (data.gameId === 'buzzduel' && typeof openBuzzDuelGame === 'function') openBuzzDuelGame();
+        else if (data.gameId === 'whiteboard' && typeof openWhiteboardGame === 'function') openWhiteboardGame();
+        else if (data.gameId === 'snowbattle' && typeof openSnowBattleGame === 'function') openSnowBattleGame();
+        else if (data.gameId === 'tugofwar' && typeof openTugOfWarGame === 'function') openTugOfWarGame();
+        else if (data.gameId === 'synctest' && typeof openSyncTestGame === 'function') openSyncTestGame();
+        else if (data.gameId === 'rebus' && typeof openRebusGame === 'function') openRebusGame();
+        else if (data.gameId === 'airhockey' && typeof openAirHockeyGame === 'function') openAirHockeyGame();
+        else if (data.gameId === 'sharedwheel' && typeof openSharedWheelGame === 'function') openSharedWheelGame();
       }, 400);
     } else {
       if (inviteBox) {

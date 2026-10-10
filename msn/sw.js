@@ -1,5 +1,5 @@
-// Service Worker v23 - Optimización WebRTC P2P (servidores TURN, reconexión móvil y liveness)
-const CACHE_NAME = 'msn-pinchi-v23';
+// Service Worker v25 - Guerra de Nieve táctica simultánea (triángulo de combate y cancelación)
+const CACHE_NAME = 'msn-pinchi-v25';
 
 const CORE_ASSETS = [
   './',
@@ -7,7 +7,7 @@ const CORE_ASSETS = [
   './manifest.json',
   './minigames.js',
   './live_chimpi.js',
-  // Módulos de los 14 minijuegos
+  // Módulos de minijuegos MSN
   './games/penguin.js',
   './games/memory.js',
   './games/runner.js',
@@ -23,6 +23,15 @@ const CORE_ASSETS = [
   './games/bubbles.js',
   './games/quiz.js',
   './games/battleship.js',
+  './games/connect4.js',
+  './games/buzzduel.js',
+  './games/whiteboard.js',
+  './games/snowbattle.js',
+  './games/tugofwar.js',
+  './games/synctest.js',
+  './games/rebus.js',
+  './games/airhockey.js',
+  './games/sharedwheel.js',
   // CDN externa para modo WebRTC
   'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js',
   // Recursos visuales, avatares e interfaz
