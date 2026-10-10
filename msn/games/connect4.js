@@ -16,6 +16,20 @@
       : (window._liveConnection && window._liveConnection.open ? window._liveConnection : null);
   }
 
+  function getTurnText(turn) {
+    const isPinchi = turn === 1;
+    let base = isPinchi ? '¡Turno de Pinchi! 🐧' : '¡Turno de Chimpi! 🐷';
+    if (isLiveGame) {
+      const myPlayer = isChimpiRole ? 2 : 1;
+      if (turn === myPlayer) {
+        base += ' (¡Te toca!)';
+      } else {
+        base += ' (Esperando...)';
+      }
+    }
+    return base;
+  }
+
   function openConnect4Game(forceSolo) {
     if (typeof closeGameModal === 'function') closeGameModal(true);
 
@@ -151,7 +165,7 @@
           </div>
 
           <div id="c4TurnIndicator" style="font-size:13px;font-weight:bold;color:#0078d7;margin-bottom:8px;">
-            ¡Turno de Pinchi! 🐧
+            ${getTurnText(1)}
           </div>
 
           <div class="c4-board-frame">
@@ -235,7 +249,9 @@
       return;
     }
 
-    makeMove(col, currentTurn);
+    const playerMoving = currentTurn;
+
+    makeMove(col, playerMoving);
 
     // Enviar por WebRTC
     if (isLiveGame) {
@@ -245,7 +261,7 @@
           conn.send({
             type: 'C4_DROP',
             col: col,
-            player: currentTurn
+            player: playerMoving
           });
         } catch (e) {}
       }
@@ -360,7 +376,7 @@
     }
 
     currentTurn = player === 1 ? 2 : 1;
-    const nextName = currentTurn === 1 ? '¡Turno de Pinchi! 🐧' : '¡Turno de Chimpi! 🐷';
+    const nextName = getTurnText(currentTurn);
     const nextColor = currentTurn === 1 ? '#0078d7' : '#e84393';
     updateTurnIndicator(nextName, nextColor);
     return true;
@@ -455,7 +471,7 @@
     initBoard();
     const grid = document.getElementById('c4Grid');
     if (grid) grid.innerHTML = renderGridHtml();
-    updateTurnIndicator('¡Turno de Pinchi! 🐧', '#0078d7');
+    updateTurnIndicator(getTurnText(1), '#0078d7');
     if (isLiveGame) {
       const conn = getConnection();
       if (conn) try { conn.send({ type: 'C4_RESTART' }); } catch (e) {}
@@ -465,14 +481,15 @@
   // Manejador de eventos remotos WebRTC
   window._handleRemoteConnect4Drop = function(data) {
     if (!data || typeof data.col !== 'number') return;
-    makeMove(data.col, data.player || currentTurn);
+    const remotePlayer = (typeof data.player === 'number') ? data.player : (isChimpiRole ? 1 : 2);
+    makeMove(data.col, remotePlayer);
   };
 
   window._handleRemoteConnect4Restart = function() {
     initBoard();
     const grid = document.getElementById('c4Grid');
     if (grid) grid.innerHTML = renderGridHtml();
-    updateTurnIndicator('¡Partida reiniciada! Turno de Pinchi 🐧', '#0078d7');
+    updateTurnIndicator('¡Partida reiniciada! ' + getTurnText(1), '#0078d7');
   };
 
   window.openConnect4Game = openConnect4Game;
