@@ -169,13 +169,13 @@
 
     if (modal) {
       var win = modal.querySelector('.game-window');
-      if (win) win.style.maxWidth = '520px';
+      if (win) win.style.maxWidth = '400px';
     }
     if (content) {
-      content.style.padding = '8px 10px';
-      content.style.gap = '4px';
-      content.style.overflowY = 'hidden';
-      content.style.maxHeight = '95vh';
+      content.style.padding = '10px 12px';
+      content.style.gap = '6px';
+      content.style.overflowY = 'auto';
+      content.style.maxHeight = '86vh';
     }
 
     const isLive = !forceSolo && !!(window._liveConnection && window._liveConnection.open);
@@ -226,7 +226,7 @@
             flex-direction: column;
             align-items: center;
             width: 100%;
-            max-width: 500px;
+            max-width: 360px;
             margin: 0 auto;
             color: #111;
             font-family: inherit;
@@ -234,76 +234,74 @@
           }
           .bs-header {
             text-align: center;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
           }
           .bs-status-badge {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: bold;
-            padding: 3px 8px;
+            padding: 4px 10px;
             border-radius: 6px;
-            margin: 2px 0 4px 0;
+            margin: 3px 0 6px 0;
             display: inline-block;
             transition: all 0.2s;
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
           }
           .bs-boards-wrapper {
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
             justify-content: center;
-            align-items: flex-start;
-            gap: 10px;
+            align-items: center;
+            gap: 12px;
             width: 100%;
-            margin: 2px 0;
-          }
-          @media (max-width: 460px) {
-            .bs-boards-wrapper {
-              gap: 6px;
-            }
+            margin: 4px 0;
           }
           .bs-board-card {
             background: #f8fbff;
             border: 1.5px solid #a4c9f5;
             border-radius: 8px;
-            padding: 5px 6px;
+            padding: 7px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.08);
             text-align: center;
             box-sizing: border-box;
+            width: 100%;
+            max-width: 270px;
           }
           .bs-board-title {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: bold;
             color: #004a9f;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 3px;
-            white-space: nowrap;
+            gap: 4px;
           }
           .bs-grid {
             display: grid;
-            grid-template-columns: repeat(6, 28px);
-            grid-template-rows: repeat(6, 28px);
-            gap: 2.5px;
+            grid-template-columns: repeat(6, 35px);
+            grid-template-rows: repeat(6, 35px);
+            gap: 3px;
             background: #002b5c;
-            padding: 3px;
+            padding: 4px;
             border-radius: 6px;
             box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+            margin: 0 auto;
+            width: fit-content;
           }
-          @media (max-width: 440px) {
+          @media (max-width: 360px) {
             .bs-grid {
-              grid-template-columns: repeat(6, 25px);
-              grid-template-rows: repeat(6, 25px);
-              gap: 2px;
+              grid-template-columns: repeat(6, 31px);
+              grid-template-rows: repeat(6, 31px);
+              gap: 2.5px;
             }
           }
           .bs-cell {
             background: #0f4c81;
-            border-radius: 3px;
+            border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
+            font-size: 15px;
             cursor: pointer;
             user-select: none;
             transition: background 0.15s, transform 0.1s;
@@ -336,15 +334,15 @@
             box-shadow: inset 0 0 3px rgba(0,0,0,0.3);
           }
           .bs-actions {
-            margin-top: 6px;
+            margin-top: 8px;
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
             justify-content: center;
           }
           .bs-actions .msn-game-launch-btn {
-            padding: 4px 10px !important;
-            font-size: 11px !important;
+            padding: 5px 12px !important;
+            font-size: 12px !important;
           }
         </style>
 
@@ -361,39 +359,39 @@
             </div>
           </div>
 
-          <div id="bsSetupControls" style="margin-bottom:4px;text-align:center;">
+          <div id="bsSetupControls" style="margin-bottom:6px;text-align:center;">
             <div style="font-size:11px;color:#444;margin-bottom:4px;">
               Reorganiza tus 4 barcos con el botón o confirma para empezar:
             </div>
             <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
-              <button id="bsRerollFleetBtn" class="msn-game-launch-btn" style="padding:4px 10px;font-size:11px;background:#17a2b8;">
+              <button id="bsRerollFleetBtn" class="msn-game-launch-btn" style="padding:5px 12px;font-size:11px;background:#17a2b8;">
                 🎲 Barajar Flota
               </button>
-              <button id="bsReadyBtn" class="msn-game-launch-btn" style="padding:5px 12px;font-size:12px;font-weight:bold;background:#28a745;">
+              <button id="bsReadyBtn" class="msn-game-launch-btn" style="padding:6px 14px;font-size:12px;font-weight:bold;background:#28a745;">
                 ⚓ ¡Zarpar a la Batalla!
               </button>
             </div>
           </div>
 
           <div class="bs-boards-wrapper">
-            <!-- Tablero 1: Radar de Ataque (contra el enemigo) -->
+            <!-- Tablero 1 (ARRIBA): Radar de Ataque contra el enemigo -->
             <div class="bs-board-card" id="bsRadarCard" style="display:none;">
               <div class="bs-board-title">
                 🎯 Radar de Ataque (${opponentName} ${opponentSymbol})
               </div>
               <div class="bs-grid" id="bsRadarGrid"></div>
-              <div style="font-size:10px;color:#666;margin-top:3px;">
+              <div style="font-size:10px;color:#666;margin-top:4px;">
                 Toca una casilla para disparar torpedo 🚀
               </div>
             </div>
 
-            <!-- Tablero 2: Tu Flota Defensiva -->
+            <!-- Tablero 2 (ABAJO): Tu Flota Defensiva -->
             <div class="bs-board-card" id="bsDefenseCard">
               <div class="bs-board-title">
                 🛡️ Tu Flota (${myName} ${mySymbol})
               </div>
               <div class="bs-grid" id="bsDefenseGrid"></div>
-              <div id="bsDefenseSubtext" style="font-size:10px;color:#666;margin-top:3px;">
+              <div id="bsDefenseSubtext" style="font-size:10px;color:#666;margin-top:4px;">
                 4 barcos preparados (8 casillas)
               </div>
             </div>
