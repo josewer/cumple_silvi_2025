@@ -96,7 +96,7 @@
         banner.style.background = '#ffc107';
         banner.style.color = '#212529';
         banner.innerHTML = `
-          <span>⏳ <b>MODO CHIMPI:</b> Conectando con Pinchi... <small style="opacity:0.6;font-size:9px;">(v41)</small></span>
+          <span>⏳ <b>MODO CHIMPI:</b> Conectando con Pinchi... <small style="opacity:0.6;font-size:9px;">(v42)</small></span>
           <button id="reconnectChimpiBtn" style="background:#212529;color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;margin-left:6px;">
             🔄 Forzar Reconexión
           </button>
@@ -117,7 +117,7 @@
         banner.style.borderBottom = '1.5px solid #70a1ff';
         banner.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:2px 0;">
-            <span>✨ <b>¡Chimpi está en directo contigo! 🐷💖</b> <small style="opacity:0.6;font-size:9px;">(v41)</small></span>
+            <span>✨ <b>¡Chimpi está en directo contigo! 🐷💖</b> <small style="opacity:0.6;font-size:9px;">(v42)</small></span>
           </div>
         `;
 
@@ -131,7 +131,7 @@
         banner.style.borderBottom = '1px solid #c8e6c9';
         banner.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:2px 4px;font-size:11px;">
-            <span>🟢 <b>Red P2P lista:</b> Esperando a Chimpi (🐷) <small style="opacity:0.6;font-size:9px;">(v41)</small></span>
+            <span>🟢 <b>Red P2P lista:</b> Esperando a Chimpi (🐷) <small style="opacity:0.6;font-size:9px;">(v42)</small></span>
             <button id="reconPinchiBtn" style="background:#fff;border:1px solid #a5d6a7;border-radius:3px;padding:2px 8px;font-size:10px;cursor:pointer;color:#2e7d32;">🔄 Refrescar</button>
           </div>
         `;
@@ -147,7 +147,7 @@
         banner.style.borderBottom = '1px solid #ffeeba';
         banner.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:2px 4px;font-size:11px;">
-            <span>⚠️ <b>Reconectando señal P2P...</b> <small style="opacity:0.6;font-size:9px;">(v41)</small></span>
+            <span>⚠️ <b>Reconectando señal P2P...</b> <small style="opacity:0.6;font-size:9px;">(v42)</small></span>
             <button id="reconPinchiBtn" style="background:#fff;border:1px solid #ffeeba;border-radius:3px;padding:2px 8px;font-size:10px;cursor:pointer;color:#856404;">🔄 Forzar</button>
           </div>
         `;
@@ -159,7 +159,7 @@
         banner.style.borderBottom = '1px solid #ffe082';
         banner.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:2px 4px;font-size:11px;">
-            <span>🟡 <b>Iniciando red P2P...</b> <small style="opacity:0.6;font-size:9px;">(v41)</small></span>
+            <span>🟡 <b>Iniciando red P2P...</b> <small style="opacity:0.6;font-size:9px;">(v42)</small></span>
             <button id="reconPinchiBtn" style="background:#fff;border:1px solid #ffe082;border-radius:3px;padding:2px 8px;font-size:10px;cursor:pointer;color:#b78103;">🔄</button>
           </div>
         `;
@@ -204,7 +204,7 @@
     });
   }
 
-  console.log('[MSN Live P2P v41] Servidores ICE configurados con STUN + ExpressTURN (puertos 3478 y 443).');
+  console.log('[MSN Live P2P v42] Servidores ICE configurados con STUN + ExpressTURN (puertos 3478 y 443) y compatibilidad iOS Safari (json).');
 
   const PEER_CONFIG = {
     debug: 1,
@@ -298,6 +298,7 @@
         try { conn.close(); } catch (e) {}
         return;
       }
+      conn.serialization = 'json';
       console.log('Pinchi: Conexión entrante de Chimpi detectada...');
       setupConnectionDataHandlers(conn);
 
@@ -333,6 +334,19 @@
       } else {
         conn.on('open', markReady);
       }
+
+      // Verificación defensiva para iOS Safari (si dataChannel.readyState pasa a open sin disparar evento)
+      const pinchiCheckInterval = setInterval(() => {
+        if (activeConn === conn && conn.open) {
+          clearInterval(pinchiCheckInterval);
+          return;
+        }
+        if (conn.open || (conn.dataChannel && conn.dataChannel.readyState === 'open')) {
+          clearInterval(pinchiCheckInterval);
+          markReady();
+        }
+      }, 200);
+      setTimeout(() => clearInterval(pinchiCheckInterval), 15000);
 
       conn.on('close', () => {
         console.log('Pinchi: Conexión con Chimpi cerrada.');
@@ -455,7 +469,8 @@
       console.log('Chimpi intentando conectar a Pinchi (vía STUN/TURN ExpressTURN)...');
       try {
         const conn = peer.connect(PINCHI_PEER_ID, {
-          reliable: true
+          reliable: true,
+          serialization: 'json'
         });
         pendingConn = conn;
 
@@ -486,7 +501,7 @@
 
         setupConnectionDataHandlers(conn);
 
-        conn.on('open', () => {
+        const markChimpiReady = () => {
           clearTimeout(connectTimeout);
           isConnecting = false;
           pendingConn = null;
@@ -494,7 +509,26 @@
           activeConn = conn;
           window._liveConnection = conn;
           updateLiveUI('connected', true);
-        });
+        };
+
+        if (conn.open) {
+          markChimpiReady();
+        } else {
+          conn.on('open', markChimpiReady);
+        }
+
+        // Verificación defensiva para iOS Safari (si dataChannel.readyState pasa a open sin evento)
+        const chimpiCheckInterval = setInterval(() => {
+          if (activeConn === conn && conn.open) {
+            clearInterval(chimpiCheckInterval);
+            return;
+          }
+          if (conn.open || (conn.dataChannel && conn.dataChannel.readyState === 'open')) {
+            clearInterval(chimpiCheckInterval);
+            markChimpiReady();
+          }
+        }, 200);
+        setTimeout(() => clearInterval(chimpiCheckInterval), 15000);
 
         conn.on('close', () => {
           clearTimeout(connectTimeout);

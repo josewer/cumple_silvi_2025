@@ -1,5 +1,5 @@
-// Service Worker v41 - Soporte ExpressTURN (puertos 3478 y 443) para WebRTC P2P en redes móviles 4G/5G y CGNAT
-const CACHE_NAME = 'msn-pinchi-v41';
+// Service Worker v42 - Soporte iOS Safari (JSON serialization y readyState check) + ExpressTURN (puertos 3478 y 443)
+const CACHE_NAME = 'msn-pinchi-v42';
 
 const CORE_ASSETS = [
   './',
