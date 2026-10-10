@@ -221,39 +221,74 @@
     });
   }
 
+  // Destrucción segura: PeerJS emite 'disconnected' DENTRO de destroy() antes de marcar
+  // el peer como destruido. Si nuestro handler llamaba a reconnect() en ese momento,
+  // el peer "moribundo" resucitaba como fantasma reteniendo la ID de Pinchi en el servidor.
+  // Marcamos el peer ANTES de destruirlo para que todos los handlers lo ignoren.
+  function safeDestroyPeer(p) {
+    if (!p) return;
+    p._intentionalDestroy = true;
+    if (!p.destroyed) {
+      try { p.destroy(); } catch (e) {}
+    }
+  }
+
   // Liberar ID inmediatamente si se cierra o recarga la pestaña
   window.addEventListener('beforeunload', () => {
-    if (peer && !peer.destroyed) {
-      try { peer.destroy(); } catch (e) {}
-    }
+    safeDestroyPeer(peer);
   });
 
   let pinchiRetryTimeout = null;
+  let pinchiRetryCount = 0;
+  const PINCHI_RESTART_ERRORS = ['unavailable-id', 'network', 'server-error', 'socket-error', 'socket-closed', 'disconnected'];
+
+  function schedulePinchiRestart() {
+    clearTimeout(pinchiRetryTimeout);
+    const delays = [3000, 6000, 10000, 15000];
+    const delay = delays[Math.min(pinchiRetryCount, delays.length - 1)];
+    pinchiRetryCount++;
+    console.log(`Pinchi: reintentando registro P2P en ${delay / 1000}s (intento ${pinchiRetryCount})...`);
+    pinchiRetryTimeout = setTimeout(() => {
+      if (!activeConn || !activeConn.open) {
+        setupPinchiMode();
+      }
+    }, delay);
+  }
 
   // --- MODO PINCHI (ESCUCHA CONEXIÓN) ---
   function setupPinchiMode() {
     clearTimeout(pinchiRetryTimeout);
     updateLiveUI('connecting', false);
 
-    if (peer && !peer.destroyed) {
-      try { peer.destroy(); } catch (e) {}
-    }
+    safeDestroyPeer(peer);
+    peer = null;
 
+    let myPeer;
     try {
-      peer = new Peer(PINCHI_PEER_ID, PEER_CONFIG);
+      myPeer = new Peer(PINCHI_PEER_ID, PEER_CONFIG);
     } catch (e) {
       console.warn('Pinchi: Error al instanciar Peer:', e);
       updateLiveUI('error', false);
-      pinchiRetryTimeout = setTimeout(setupPinchiMode, 3000);
+      schedulePinchiRestart();
       return;
     }
+    peer = myPeer;
 
-    peer.on('open', (id) => {
+    // Ignorar eventos de peers antiguos o destruidos a propósito
+    const isStale = () => myPeer !== peer || myPeer._intentionalDestroy;
+
+    myPeer.on('open', (id) => {
+      if (isStale()) return;
+      pinchiRetryCount = 0;
       console.log('Pinchi lista para recibir a Chimpi. ID:', id);
       updateLiveUI('waiting', false);
     });
 
-    peer.on('connection', (conn) => {
+    myPeer.on('connection', (conn) => {
+      if (isStale()) {
+        try { conn.close(); } catch (e) {}
+        return;
+      }
       console.log('Pinchi: Conexión entrante de Chimpi detectada...');
       setupConnectionDataHandlers(conn);
 
@@ -299,25 +334,23 @@
       });
     });
 
-    peer.on('error', (err) => {
+    myPeer.on('error', (err) => {
+      if (isStale()) return;
       console.warn('Pinchi Peer error:', err.type, err);
-      updateLiveUI('error', false);
-      clearTimeout(pinchiRetryTimeout);
-      pinchiRetryTimeout = setTimeout(() => {
-        if (!activeConn || !activeConn.open) {
-          setupPinchiMode();
-        }
-      }, 3000);
+      // Solo reiniciar el peer completo ante errores de servidor/red.
+      // Errores sueltos de una conexión WebRTC (p. ej. 'webrtc') no deben tumbar el registro.
+      if (PINCHI_RESTART_ERRORS.includes(err.type)) {
+        updateLiveUI('error', false);
+        schedulePinchiRestart();
+      }
     });
 
-    peer.on('disconnected', () => {
-      console.log('Pinchi Peer desconectado del servidor. Intentando reconectar...');
+    myPeer.on('disconnected', () => {
+      if (isStale()) return;
+      console.log('Pinchi Peer desconectado del servidor de señalización. Reconectando...');
       updateLiveUI('error', false);
-      if (peer && !peer.destroyed) {
-        try { peer.reconnect(); } catch (e) {}
-      } else {
-        setupPinchiMode();
-      }
+      // reconnect() conserva la misma ID; si falla, el handler de error programará un reinicio completo
+      try { myPeer.reconnect(); } catch (e) { schedulePinchiRestart(); }
     });
   }
 
@@ -334,41 +367,46 @@
       try { pendingConn.close(); } catch (e) {}
       pendingConn = null;
     }
+    isConnecting = false;
 
-    if (peer && !peer.destroyed) {
-      try { peer.destroy(); } catch (e) {}
-    }
+    safeDestroyPeer(peer);
+    peer = null;
 
+    let myPeer;
     try {
-      peer = new Peer(PEER_CONFIG);
+      myPeer = new Peer(PEER_CONFIG);
     } catch (e) {
       console.warn('Chimpi: Error al instanciar Peer:', e);
       clearTimeout(chimpiReconnectTimeout);
       chimpiReconnectTimeout = setTimeout(setupChimpiMode, 3000);
       return;
     }
+    peer = myPeer;
 
-    peer.on('open', (id) => {
+    const isStale = () => myPeer !== peer || myPeer._intentionalDestroy;
+
+    myPeer.on('open', (id) => {
+      if (isStale()) return;
       console.log('Chimpi Peer abierto. ID propia:', id);
       connectToPinchi();
     });
 
-    peer.on('error', (err) => {
+    myPeer.on('error', (err) => {
+      if (isStale()) return;
       console.warn('Chimpi Peer error:', err.type, err);
       isConnecting = false;
       if (err.type === 'peer-unavailable') {
+        // Pinchi aún no está registrada: el intervalo volverá a intentarlo
         updateLiveUI('waiting', false);
-      } else if (err.type === 'network' || err.type === 'disconnected') {
-        if (peer && !peer.destroyed) {
-          try { peer.reconnect(); } catch (e) {}
-        }
+      } else if (err.type === 'unavailable-id' || err.type === 'server-error' || err.type === 'socket-error' || err.type === 'socket-closed') {
+        clearTimeout(chimpiReconnectTimeout);
+        chimpiReconnectTimeout = setTimeout(setupChimpiMode, 3000);
       }
     });
 
-    peer.on('disconnected', () => {
-      if (peer && !peer.destroyed) {
-        try { peer.reconnect(); } catch (e) {}
-      }
+    myPeer.on('disconnected', () => {
+      if (isStale()) return;
+      try { myPeer.reconnect(); } catch (e) {}
     });
 
     function connectToPinchi() {
@@ -1136,34 +1174,37 @@
     }
   };
 
-  // Reconectar automáticamente si se cambia de red (Wi-Fi <-> 4G/5G), visibilidad o se desbloquea el móvil
-  function handleDeviceWakeup() {
-    console.log('Cambio de red o primer plano detectado. Verificando estado P2P...');
-    if (activeConn && activeConn.open) {
-      // Si la conexión WebRTC P2P ya está abierta y funcionando, no la interrumpas
-      return;
-    }
-    // Si no estamos conectados en directo, destruir el socket potencialmente zombi y registrar de cero con la nueva IP/red
-    if (peer && !peer.destroyed) {
-      try { peer.destroy(); } catch (e) {}
-    }
+  // Reconexión inteligente al cambiar de red (Wi-Fi <-> 4G/5G) o volver a primer plano
+  let wakeupDebounce = null;
+
+  function restartP2P(reason) {
+    if (activeConn && activeConn.open) return; // Nunca interrumpir una sesión en directo activa
+    console.log(`Reiniciando P2P (${reason})...`);
+    clearTimeout(pinchiRetryTimeout);
+    clearTimeout(chimpiReconnectTimeout);
+    pinchiRetryCount = 0;
+    safeDestroyPeer(peer);
     peer = null;
     initP2P();
   }
 
+  function isPeerDown() {
+    return !peer || peer.destroyed || peer.disconnected || !peer.open;
+  }
+
+  // Cambio real de red: la IP ha cambiado, el socket anterior puede ser un zombi → reinicio completo
   window.addEventListener('online', () => {
-    console.log('Red detectada online. Reanudando P2P...');
-    handleDeviceWakeup();
+    clearTimeout(wakeupDebounce);
+    wakeupDebounce = setTimeout(() => restartP2P('red online / cambio de red'), 1500);
   });
 
-  window.addEventListener('focus', () => {
-    handleDeviceWakeup();
-  });
-
+  // Vuelta a primer plano: solo reiniciar si el peer está realmente caído
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-      handleDeviceWakeup();
-    }
+    if (document.hidden) return;
+    clearTimeout(wakeupDebounce);
+    wakeupDebounce = setTimeout(() => {
+      if (isPeerDown()) restartP2P('vuelta a primer plano con peer caído');
+    }, 1000);
   });
 
   if (document.readyState === 'loading') {

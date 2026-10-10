@@ -1,5 +1,5 @@
-// Service Worker v38 - Indicador visible de estado P2P en Pinchi, purga de sockets zombis en 4G/5G y heartbeat 3s
-const CACHE_NAME = 'msn-pinchi-v38';
+// Service Worker v39 - Fix peer fantasma (destroy+reconnect) que retenía la ID de Pinchi y reconexión inteligente por cambio de red
+const CACHE_NAME = 'msn-pinchi-v39';
 
 const CORE_ASSETS = [
   './',
