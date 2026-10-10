@@ -1,5 +1,5 @@
-// Service Worker v39 - Fix peer fantasma (destroy+reconnect) que retenía la ID de Pinchi y reconexión inteligente por cambio de red
-const CACHE_NAME = 'msn-pinchi-v39';
+// Service Worker v40 - Soporte ExpressTURN para WebRTC P2P en redes móviles 4G/5G y CGNAT
+const CACHE_NAME = 'msn-pinchi-v40';
 
 const CORE_ASSETS = [
   './',

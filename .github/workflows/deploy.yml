@@ -1,0 +1,51 @@
+name: Despliegue en GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Inyectar Secretos TURN en live_chimpi.js
+        env:
+          TURN_USER: ${{ secrets.TURN_USERNAME }}
+          TURN_PASS: ${{ secrets.TURN_PASSWORD }}
+        run: |
+          if [ -n "$TURN_USER" ] && [ -n "$TURN_PASS" ]; then
+            sed -i "s|__EXPRESSTURN_USERNAME__|$TURN_USER|g" msn/live_chimpi.js
+            sed -i "s|__EXPRESSTURN_CREDENTIAL__|$TURN_PASS|g" msn/live_chimpi.js
+            echo "Secretos TURN inyectados con éxito para producción."
+          else
+            echo "Aviso: TURN_USERNAME o TURN_PASSWORD no están configurados en los Secretos de GitHub."
+          fi
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Subir artefacto
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Desplegar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

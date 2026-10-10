@@ -1,0 +1,10 @@
+# Configuración local de credenciales (NUNCA subir a Git)
+msn/turn_config.local.js
+turn_config.local.js
+*.local.js
+.env
+.env.*
+
+# Archivos del sistema y temporales
+.DS_Store
+Thumbs.db

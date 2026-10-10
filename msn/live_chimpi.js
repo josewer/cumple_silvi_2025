@@ -169,39 +169,44 @@
     }
   }
 
+  // Credenciales TURN: prioriza archivo local de desarrollo (turn_config.local.js)
+  // o los marcadores inyectados automáticamente por GitHub Actions al desplegar
+  const TURN_INJECTED_USER = '__EXPRESSTURN_USERNAME__';
+  const TURN_INJECTED_PASS = '__EXPRESSTURN_CREDENTIAL__';
+
+  const turnUsername = (window.LOCAL_TURN_CONFIG && window.LOCAL_TURN_CONFIG.username)
+    ? window.LOCAL_TURN_CONFIG.username
+    : (!TURN_INJECTED_USER.startsWith('__') ? TURN_INJECTED_USER : '');
+
+  const turnCredential = (window.LOCAL_TURN_CONFIG && window.LOCAL_TURN_CONFIG.credential)
+    ? window.LOCAL_TURN_CONFIG.credential
+    : (!TURN_INJECTED_PASS.startsWith('__') ? TURN_INJECTED_PASS : '');
+
+  const iceServersList = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+    { urls: 'stun:stun.cloudflare.com:3478' }
+  ];
+
+  if (turnUsername && turnCredential) {
+    iceServersList.push({
+      urls: [
+        'turn:free.expressturn.com:3478',
+        'turn:free.expressturn.com:3478?transport=tcp'
+      ],
+      username: turnUsername,
+      credential: turnCredential
+    });
+  }
+
   const PEER_CONFIG = {
     debug: 1,
     pingInterval: 3000,
     config: {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        { urls: 'stun:stun3.l.google.com:19302' },
-        { urls: 'stun:stun4.l.google.com:19302' },
-        { urls: 'stun:stun.cloudflare.com:3478' },
-        { urls: 'stun:openrelay.metered.ca:80' },
-        {
-          urls: 'turn:openrelay.metered.ca:80',
-          username: 'openrelayproject',
-          credential: 'openrelayproject'
-        },
-        {
-          urls: 'turn:openrelay.metered.ca:443',
-          username: 'openrelayproject',
-          credential: 'openrelayproject'
-        },
-        {
-          urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-          username: 'openrelayproject',
-          credential: 'openrelayproject'
-        },
-        {
-          urls: 'turns:openrelay.metered.ca:443?transport=tcp',
-          username: 'openrelayproject',
-          credential: 'openrelayproject'
-        }
-      ],
+      iceServers: iceServersList,
       iceCandidatePoolSize: 10
     }
   };
@@ -296,6 +301,11 @@
         const pc = conn.peerConnection;
         if (pc && !conn._iceMonitored) {
           conn._iceMonitored = true;
+          pc.addEventListener('icecandidate', (e) => {
+            if (e.candidate) {
+              console.log(`[WebRTC ICE Pinchi Cand]: tipo=${e.candidate.type} | proto=${e.candidate.protocol} | ip=${e.candidate.address || e.candidate.ip}`);
+            }
+          });
           pc.addEventListener('iceconnectionstatechange', () => {
             console.log(`[WebRTC ICE Pinchi]: ${pc.iceConnectionState}`);
           });
@@ -438,7 +448,7 @@
         }
       }, 15000);
 
-      console.log('Chimpi intentando conectar a Pinchi (vía STUN/TURN OpenRelay)...');
+      console.log('Chimpi intentando conectar a Pinchi (vía STUN/TURN ExpressTURN)...');
       try {
         const conn = peer.connect(PINCHI_PEER_ID, {
           reliable: true
@@ -450,6 +460,11 @@
           const pc = conn.peerConnection;
           if (pc && !conn._iceMonitored) {
             conn._iceMonitored = true;
+            pc.addEventListener('icecandidate', (e) => {
+              if (e.candidate) {
+                console.log(`[WebRTC ICE Chimpi Cand]: tipo=${e.candidate.type} | proto=${e.candidate.protocol} | ip=${e.candidate.address || e.candidate.ip}`);
+              }
+            });
             pc.addEventListener('iceconnectionstatechange', () => {
               console.log(`[WebRTC ICE Chimpi]: ${pc.iceConnectionState}`);
               if (pc.iceConnectionState === 'failed') {
@@ -553,9 +568,22 @@
     // Monitoreo de estado ICE de WebRTC si está disponible
     if (conn.peerConnection) {
       try {
+        let iceDisconnectGraceTimer = null;
         conn.peerConnection.addEventListener('iceconnectionstatechange', () => {
           const state = conn.peerConnection ? conn.peerConnection.iceConnectionState : null;
-          if (state === 'failed') {
+          if (state === 'disconnected') {
+            console.log('ICE WebRTC disconnected temporalmente. Esperando 10s por si se estabiliza...');
+            clearTimeout(iceDisconnectGraceTimer);
+            iceDisconnectGraceTimer = setTimeout(() => {
+              if (conn.peerConnection && conn.peerConnection.iceConnectionState === 'disconnected') {
+                console.warn('ICE sigue disconnected tras 10s. Cerrando conexión...');
+                try { conn.close(); } catch (e) {}
+              }
+            }, 10000);
+          } else if (state === 'connected' || state === 'completed') {
+            clearTimeout(iceDisconnectGraceTimer);
+          } else if (state === 'failed') {
+            clearTimeout(iceDisconnectGraceTimer);
             console.warn('ICE WebRTC failed. Cerrando conexión para reintento...');
             try { conn.close(); } catch (e) {}
           }
