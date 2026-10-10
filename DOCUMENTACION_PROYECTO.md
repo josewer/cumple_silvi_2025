@@ -53,7 +53,7 @@ c:\dev\cumple_pinchi_2025\
         ├── scratch.js          (5. Rasca y Gana de Cumpleaños)
         ├── wheel.js            (6. La Ruleta Millennial)
         ├── tictactoe.js        (7. Tres en Raya: Pinchi vs Chimpi)
-        ├── puzzle.js           (8. Puzzle Deslizante 3x3)
+        ├── puzzle.js           (8. Puzzle Deslizante 3x3, 4x4 y 5x5)
         ├── simon.js            (9. Simón Dice MSN)
         ├── feedpig.js          (10. Alimenta a Chimpi el Cerdito)
         ├── brick.js            (11. Rompe-Ladrillos Pingüino)
@@ -78,7 +78,7 @@ Todos los minijuegos son táctiles, tienen sonido retro sintetizado (Web Audio A
 | 5 | `games/scratch.js` | **Rasca y Gana de Cumple** | ✨ | Tarjeta de rascar táctil en canvas con efecto real de escarcha. Al rascar el 55% revela un mensaje y foto de Chimpi. |
 | 6 | `games/wheel.js` | **La Ruleta Millennial** | 🎡 | Ruleta de premios con desaceleración física, sonido de tic-tac y vales de regalo reales (Cena, Peli+Manta, Masaje, Escapada, etc.). |
 | 7 | `games/tictactoe.js` | **Tres en Raya MSN** | ❌⭕ | Duelo directo: **Pinchi (🐧)** contra **Chimpi el Cerdito (🐷)**. Incluye IA que intenta ganar o bloquear y frases cómicas de Chimpi (*"Oink!"*). |
-| 8 | `games/puzzle.js` | **Puzzle Deslizante** | 🧩 | Cuadrícula 3x3 para ordenar las piezas desordenadas de una foto de recuerdo. |
+| 8 | `games/puzzle.js` | **Puzzle Deslizante** | 🧩 | Cuadrícula con selector de 3 niveles: **3x3 (Fácil)**, **4x4 (Normal)** y **5x5 (Reto)** para ordenar fotos de recuerdo. Incluye **cronómetro en vivo (⏱️ mm:ss)** para medir el tiempo de resolución junto al contador de movimientos, **insignias numeradas (1 a 8, 1 a 15 y 1 a 24)** desactivadas por defecto con botón interactivo de ayuda voluntaria (ON/OFF), recorte porcentual adaptativo y barajado resoluble garantizado. Al resolver el puzzle, suena la fanfarria retro, se detiene el cronómetro mostrando el tiempo récord, se lanza confeti, los números se retiran y **el hueco vacío se completa automáticamente con el trozo final de la foto** (con destello dorado animado) para admirar la imagen completa al 100%. |
 | 9 | `games/simon.js` | **Simón Dice MSN** | 🎶 | Secuencia audiovisual retro con **Modo Infinito** (sin límite de rondas y guardado de récord en `localStorage`), **Selector de Ayuda Visual** (Modo Normal con luces neón y sonido vs. Modo Experto con solo oído musical), modo de calentamiento libre previo y chivato de tecla correcta al fallar. |
 | 10 | `games/feedpig.js` | **Alimenta a Chimpi** | 🍖 | Chimpi el cerdito se mueve arriba y Pinchi tiene raciones de comida limitadas (14 raciones) para acertar 8 veces antes de que se agote la comida o el tiempo. |
 | 11 | `games/brick.js` | **Rompe-Ladrillos MSN** | 🧱 | Arkanoid retro clásico donde una pala de hielo controlada con el dedo rebota bolas de nieve para destruir 18 ladrillos. |

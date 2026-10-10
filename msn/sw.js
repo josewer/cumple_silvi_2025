@@ -1,5 +1,5 @@
-// Service Worker v32 - Bloqueo atómico de gol único y congelación de físicas al anotar en Air Hockey
-const CACHE_NAME = 'msn-pinchi-v32';
+// Service Worker v36 - Cronómetro de tiempo y números desactivados por defecto en Puzzle Deslizante
+const CACHE_NAME = 'msn-pinchi-v36';
 
 const CORE_ASSETS = [
   './',
