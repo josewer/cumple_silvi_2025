@@ -142,24 +142,32 @@
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
         { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
         { urls: 'stun:stun.cloudflare.com:3478' },
-        { urls: 'stun:stun.relay.metered.ca:80' },
+        { urls: 'stun:openrelay.metered.ca:80' },
         {
-          urls: 'turn:standard.relay.metered.ca:80',
+          urls: 'turn:openrelay.metered.ca:80',
           username: 'openrelayproject',
           credential: 'openrelayproject'
         },
         {
-          urls: 'turn:standard.relay.metered.ca:443',
+          urls: 'turn:openrelay.metered.ca:443',
           username: 'openrelayproject',
           credential: 'openrelayproject'
         },
         {
-          urls: 'turn:standard.relay.metered.ca:443?transport=tcp',
+          urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        },
+        {
+          urls: 'turns:openrelay.metered.ca:443?transport=tcp',
           username: 'openrelayproject',
           credential: 'openrelayproject'
         }
-      ]
+      ],
+      iceCandidatePoolSize: 10
     }
   };
 
@@ -210,6 +218,18 @@
     peer.on('connection', (conn) => {
       console.log('Pinchi: Conexión entrante de Chimpi detectada...');
       setupConnectionDataHandlers(conn);
+
+      const attachIceMonitor = () => {
+        const pc = conn.peerConnection;
+        if (pc && !conn._iceMonitored) {
+          conn._iceMonitored = true;
+          pc.addEventListener('iceconnectionstatechange', () => {
+            console.log(`[WebRTC ICE Pinchi]: ${pc.iceConnectionState}`);
+          });
+        }
+      };
+      setTimeout(attachIceMonitor, 200);
+      setTimeout(attachIceMonitor, 1000);
 
       const markReady = () => {
         console.log('Pinchi: ¡Canal P2P abierto y listo con Chimpi!');
@@ -341,17 +361,38 @@
       const connectTimeout = setTimeout(() => {
         isConnecting = false;
         if (pendingConn && !pendingConn.open) {
+          console.log('Chimpi: Timeout de negociación WebRTC/TURN (15s). Preparando nuevo intento...');
           try { pendingConn.close(); } catch (e) {}
           pendingConn = null;
         }
-      }, 5000);
+      }, 15000);
 
-      console.log('Chimpi intentando conectar a Pinchi...');
+      console.log('Chimpi intentando conectar a Pinchi (vía STUN/TURN OpenRelay)...');
       try {
         const conn = peer.connect(PINCHI_PEER_ID, {
           reliable: true
         });
         pendingConn = conn;
+
+        // Monitorización de estado ICE en Chimpi para diagnóstico
+        const attachIceMonitor = () => {
+          const pc = conn.peerConnection;
+          if (pc && !conn._iceMonitored) {
+            conn._iceMonitored = true;
+            pc.addEventListener('iceconnectionstatechange', () => {
+              console.log(`[WebRTC ICE Chimpi]: ${pc.iceConnectionState}`);
+              if (pc.iceConnectionState === 'failed') {
+                console.warn('ICE falló en Chimpi. Reiniciando intento...');
+                clearTimeout(connectTimeout);
+                isConnecting = false;
+                if (pendingConn === conn) pendingConn = null;
+                try { conn.close(); } catch (e) {}
+              }
+            });
+          }
+        };
+        setTimeout(attachIceMonitor, 200);
+        setTimeout(attachIceMonitor, 1000);
 
         setupConnectionDataHandlers(conn);
 
@@ -396,7 +437,7 @@
       if (!activeConn || !activeConn.open) {
         connectToPinchi();
       }
-    }, 3500);
+    }, 6000);
   }
 
   function adaptUIToChimpi() {

@@ -1,5 +1,5 @@
-// Service Worker v36 - Cronómetro de tiempo y números desactivados por defecto en Puzzle Deslizante
-const CACHE_NAME = 'msn-pinchi-v36';
+// Service Worker v37 - Corrección de servidores TURN OpenRelay, TURNS sobre 443 TCP y timeout 15s para redes 4G/CGNAT
+const CACHE_NAME = 'msn-pinchi-v37';
 
 const CORE_ASSETS = [
   './',
