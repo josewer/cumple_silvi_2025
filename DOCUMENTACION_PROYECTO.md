@@ -61,7 +61,8 @@ c:\dev\cumple_pinchi_2025\
         ├── bubbles.js          (13. Burbujas del Amor)
         ├── quiz.js             (14. Test de Pareja Cómico)
         ├── battleship.js       (15. Hundir la Flota: Batalla Naval)
-        └── worms.js            (16. Worms MSN: Pinchi vs Chimpi)
+        ├── whiteboard.js       (16. Pizarra MSN: NetMeeting Dibuja y Adivina)
+        └── worms.js            (17. Worms MSN: Pinchi vs Chimpi)
 ```
 
 ---
@@ -87,7 +88,8 @@ Todos los minijuegos son táctiles, tienen sonido retro sintetizado (Web Audio A
 | 13 | `games/bubbles.js` | **Burbujas del Amor** | 🫧 | Explota 20 burbujas flotantes tocándolas en pantalla con sonido "pop" antes de que escapen. |
 | 14 | `games/quiz.js` | **Test de Pareja Cómico** | 💑 | 5 preguntas divertidas de pareja con respuestas cómicas y veredicto final con confeti de cumpleaños. |
 | 15 | `games/battleship.js` | **Hundir la Flota MSN** | 🚢 | Batalla naval 6x6 (Live P2P WebRTC y vs IA). Turno inicial aleatorio (50%), zona de seguridad perimetral obligatoria de 1 casilla de agua en 8 direcciones, estados visuales diferenciados (Agua 💧, Tocado 🔥 con fuego y Hundido 💥 con explosión y naufragio completo del barco), y diseño vertical optimizado para móvil (Radar de Ataque arriba y Flota abajo con celdas de 35px). |
-| 16 | `games/worms.js` | **Worms: Pinchi vs Chimpi** | 💥 | *(Oculto por defecto en el hub)* Duelo de artillería balística 1 vs 1 por turnos en Canvas 2D. Generación procedural de terreno con destrucción en tiempo real (`destination-out`), viento variable, retrocesos por explosión, peligro de agua, movimiento paso a paso, armas (Bazooka de Sardina 🐟 y Granada Bellota 💣), sonido retro, IA porcina cómica y soporte multijugador P2P WebRTC en vivo. |
+| 16 | `games/whiteboard.js` | **Pizarra MSN** | 🎨 | Pizarra NetMeeting Pictionary (Dibuja y Adivina). **Sistema de roles alternos por turnos ronda a ronda**: Ronda 1 dibuja Pinchi 🐧 y adivina Chimpi 🐷, Ronda 2 dibuja Chimpi y adivina Pinchi, alternándose automáticamente tras acertar o agotar los 60s. Sincronizado en vivo por WebRTC P2P (evento `WB_ROUND`), con bocetos animados de la IA en solitario cuando dibuja Chimpi e intentos de adivinanza cuando dibuja Pinchi. |
+| 17 | `games/worms.js` | **Worms: Pinchi vs Chimpi** | 💥 | *(Oculto por defecto en el hub)* Duelo de artillería balística 1 vs 1 por turnos en Canvas 2D. Generación procedural de terreno con destrucción en tiempo real (`destination-out`), viento variable, retrocesos por explosión, peligro de agua, movimiento paso a paso, armas (Bazooka de Sardina 🐟 y Granada Bellota 💣), sonido retro, IA porcina cómica y soporte multijugador P2P WebRTC en vivo. |
 
 ---
 

@@ -799,6 +799,9 @@
         case 'WB_GUESS_CORRECT':
           if (typeof window._handleRemoteWhiteboardCorrect === 'function') window._handleRemoteWhiteboardCorrect(data);
           break;
+        case 'WB_ROUND':
+          if (typeof window._handleRemoteWhiteboardRound === 'function') window._handleRemoteWhiteboardRound(data);
+          break;
 
         case 'SNOW_ACTION':
           if (typeof window._handleRemoteSnowAction === 'function') window._handleRemoteSnowAction(data);
