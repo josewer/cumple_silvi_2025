@@ -60,12 +60,13 @@ c:\dev\cumple_pinchi_2025\
         ├── hangman.js          (12. Ahorcado Romántico - Salva la tarta)
         ├── bubbles.js          (13. Burbujas del Amor)
         ├── quiz.js             (14. Test de Pareja Cómico)
-        └── battleship.js       (15. Hundir la Flota: Batalla Naval)
+        ├── battleship.js       (15. Hundir la Flota: Batalla Naval)
+        └── worms.js            (16. Worms MSN: Pinchi vs Chimpi)
 ```
 
 ---
 
-## 🎮 4. Catálogo Detallado de los 14 Minijuegos
+## 🎮 4. Catálogo Detallado de Minijuegos
 
 Todos los minijuegos son táctiles, tienen sonido retro sintetizado (Web Audio API), soporte de vibración en smartphones y botón para regresar a la sala de juegos:
 
@@ -86,6 +87,7 @@ Todos los minijuegos son táctiles, tienen sonido retro sintetizado (Web Audio A
 | 13 | `games/bubbles.js` | **Burbujas del Amor** | 🫧 | Explota 20 burbujas flotantes tocándolas en pantalla con sonido "pop" antes de que escapen. |
 | 14 | `games/quiz.js` | **Test de Pareja Cómico** | 💑 | 5 preguntas divertidas de pareja con respuestas cómicas y veredicto final con confeti de cumpleaños. |
 | 15 | `games/battleship.js` | **Hundir la Flota MSN** | 🚢 | Batalla naval 6x6 (Live P2P WebRTC y vs IA). Turno inicial aleatorio (50%), zona de seguridad perimetral obligatoria de 1 casilla de agua en 8 direcciones, estados visuales diferenciados (Agua 💧, Tocado 🔥 con fuego y Hundido 💥 con explosión y naufragio completo del barco), y diseño vertical optimizado para móvil (Radar de Ataque arriba y Flota abajo con celdas de 35px). |
+| 16 | `games/worms.js` | **Worms: Pinchi vs Chimpi** | 💥 | *(Oculto por defecto en el hub)* Duelo de artillería balística 1 vs 1 por turnos en Canvas 2D. Generación procedural de terreno con destrucción en tiempo real (`destination-out`), viento variable, retrocesos por explosión, peligro de agua, movimiento paso a paso, armas (Bazooka de Sardina 🐟 y Granada Bellota 💣), sonido retro, IA porcina cómica y soporte multijugador P2P WebRTC en vivo. |
 
 ---
 
@@ -190,20 +192,20 @@ Implementado en `msn/live_chimpi.js` para permitir que Chimpi se conecte en dire
 
 ---
 
-## 🌟 9. Pantalla de Bienvenida / Splash Screen Retro (MSN Messenger 7.5 & Windows XP)
+## 🌟 9. Pantalla de Bienvenida / Splash Screen Retro y Mensaje Limpio
 
-Implementada en `msn/index.html` para proporcionar una apertura automática e inmersiva:
-1. **Comportamiento Automático:**
+Implementada en `msn/index.html` para proporcionar una apertura automática, inmersiva y emotiva en dos fases:
+1. **Fase 1: Ventana de Apertura Retro (2.5s):**
    - Carga directamente superpuesta a pantalla completa en el HTML inicial para evitar cualquier parpadeo previo del chat (`FOUC`).
-   - Duración fija de exactamente **2.5 segundos** manejada con `setTimeout`.
-   - Transición de salida suave con `fade-out` CSS (`opacity: 0; pointer-events: none; visibility: hidden;`) y descarte del nodo tras 550ms.
-2. **Estética Windows XP & MSN Messenger:**
-   - Marco de ventana con cabecera clásica *Luna Blue* y botones decorativos XP.
-   - Logotipo retro oficial de MSN Messenger.
-   - Avatares de **Pinchi (🐧)** y **Chimpi (🐷)** con animación de rebote suave (`pinchi-bounce` / `chimpi-bounce`) y puntos de conexión parpadeantes.
-   - Textos de estado nostálgicos: *"Iniciando sesión..."* y *"Conectando con Chimpi..."*.
-   - Barra de progreso clásica de Windows XP con bloques verdes deslizándose en bucle continuo (`xpMarquee`).
-   - Acorde retro polifónico sintetizado con **Web Audio API** nativo (C5-E5-G5-C6) con manejo silencioso de restricciones de autoplay de navegadores móviles.
-3. **Aislamiento Técnico:**
+   - Marco de ventana clásica *Luna Blue* de Windows XP y MSN Messenger 7.5 con avatares de **Pinchi (🐧)** y **Chimpi (🐷)** rebotando suavemente.
+   - Barra de progreso verde XP en bucle (`xpMarquee`) y acorde retro nostálgico polifónico con Web Audio API (C5-E5-G5-C6).
+2. **Fase 2: Pantalla Limpia "Chimpi te quiere." (1.5s):**
+   - Al terminar la carga de la ventana XP, se desvanece la ventana y se muestra una pantalla a pantalla completa completamente limpia (`#msnLoveScreen`) con fondo radial blanco sedoso sin elementos superfluos.
+   - Muestra de forma centrada, en cursiva serif editorial clásica (Georgia) y con animación cinematográfica de enfoque suave (*Cinematic blur-in* `blur(8px) → blur(0px)` y `scale(0.96) → scale(1)`):
+     $$\textit{\textbf{Chimpi te quiere.}}$$
+   - Permite tocar en cualquier punto para saltar de inmediato al chat sin esperar los 1,5 segundos.
+3. **Fase 3: Transición al Chat:**
+   - La pantalla se desvanece suavemente con un `fade-out` CSS de 500ms revelando el chat de MSN listo para escribir.
+4. **Aislamiento Técnico:**
    - 100% Vanilla HTML5, CSS3 y JS nativo sin librerías externas ni npm.
    - Desacoplado: No interfiere en la sincronización WebRTC (`live_chimpi.js`), minijuegos ni el Service Worker (`sw.js`).

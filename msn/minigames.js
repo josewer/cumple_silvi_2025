@@ -271,6 +271,14 @@ var MSN_GAMES_CATALOG = [
     icon: '🎡',
     fn: 'openSharedWheelGame',
     hidden: true
+  },
+  {
+    id: 'worms',
+    title: 'Worms: Pinchi vs Chimpi',
+    desc: 'Duelo balístico 1 vs 1 con terreno destructible 💥',
+    icon: '💥',
+    fn: 'openWormsGame',
+    hidden: true
   }
 ];
 

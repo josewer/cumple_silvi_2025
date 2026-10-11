@@ -840,6 +840,16 @@
           if (typeof window._handleRemotePuzzleRematch === 'function') window._handleRemotePuzzleRematch(data);
           break;
 
+        case 'WORMS_MOVE':
+          if (typeof window._handleRemoteWormsMove === 'function') window._handleRemoteWormsMove(data);
+          break;
+        case 'WORMS_SHOT':
+          if (typeof window._handleRemoteWormsShot === 'function') window._handleRemoteWormsShot(data);
+          break;
+        case 'WORMS_RESTART':
+          if (typeof window._handleRemoteWormsRestart === 'function') window._handleRemoteWormsRestart();
+          break;
+
         case 'open_game':
           if (data.game === 'tictactoe' && typeof openTicTacToeGame === 'function') openTicTacToeGame();
           else if (data.game === 'memory' && typeof openMemoryGame === 'function') openMemoryGame(data.deckItemIds, data.startingTurn, true);
@@ -853,6 +863,7 @@
           else if (data.game === 'rebus' && typeof openRebusGame === 'function') openRebusGame();
           else if (data.game === 'airhockey' && typeof openAirHockeyGame === 'function') openAirHockeyGame();
           else if (data.game === 'sharedwheel' && typeof openSharedWheelGame === 'function') openSharedWheelGame();
+          else if (data.game === 'worms' && typeof openWormsGame === 'function') openWormsGame();
           else if (data.game === 'puzzle' && typeof openPuzzleGame === 'function') openPuzzleGame(data.raceConfig || null, !!data.raceConfig);
           else if (typeof openGamesHub === 'function') openGamesHub();
           break;

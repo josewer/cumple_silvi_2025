@@ -1203,13 +1203,67 @@
         width: 90%;
       }
     }
+
+    /* Pantalla limpia intermedia: Chimpi te quiere. */
+    .msn-love-screen {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 50%, #ffffff 0%, #fafaf9 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      box-sizing: border-box;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s ease;
+      z-index: 5;
+      cursor: pointer;
+    }
+
+    .msn-love-screen.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .msn-love-text {
+      font-family: Georgia, 'Times New Roman', 'Playfair Display', serif;
+      font-size: 34px;
+      font-weight: 500;
+      font-style: italic;
+      color: #1e293b;
+      letter-spacing: 0.6px;
+      text-align: center;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      animation: loveCinematicIn 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    @keyframes loveCinematicIn {
+      0% {
+        opacity: 0;
+        filter: blur(8px);
+        transform: translateY(6px) scale(0.96);
+      }
+      50% {
+        filter: blur(2px);
+      }
+      100% {
+        opacity: 1;
+        filter: blur(0px);
+        transform: translateY(0) scale(1);
+      }
+    }
   </style>
 </head>
 
 <body>
   <!-- Pantalla de Bienvenida / Splash Screen Retro Windows XP & MSN Messenger -->
   <div id="msnSplashScreen" class="msn-splash-overlay" role="dialog" aria-modal="true" aria-label="Bienvenida MSN Messenger">
-    <div class="msn-splash-window">
+    <div class="msn-splash-window" id="msnSplashWindow">
       <!-- Barra de título Windows XP Luna Style -->
       <div class="msn-splash-titlebar">
         <div class="msn-splash-title">
@@ -1279,6 +1333,11 @@
           <span>Microsoft Windows XP Retro Edition &bull; 2000s</span>
         </div>
       </div>
+    </div>
+
+    <!-- Pantalla limpia intermedia: Chimpi te quiere. -->
+    <div id="msnLoveScreen" class="msn-love-screen">
+      <div class="msn-love-text">Chimpi te quiere...</div>
     </div>
   </div>
 
@@ -1374,10 +1433,12 @@
 
     <script>
       // ========================================================
-      // CONTROL DE PANTALLA DE BIENVENIDA (SPLASH SCREEN 2.5s)
+      // CONTROL DE PANTALLA DE BIENVENIDA Y MENSAJE LIMPIO
       // ========================================================
       (function initMsnSplash() {
         const splash = document.getElementById('msnSplashScreen');
+        const splashWindow = document.getElementById('msnSplashWindow');
+        const loveScreen = document.getElementById('msnLoveScreen');
         if (!splash) return;
 
         // Acorde sutil retro con Web Audio API (no intrusivo / sin romper si el navegador bloquea autoplay)
@@ -1408,17 +1469,39 @@
           /* Ignorar bloqueo de autoplay */
         }
 
-        // Exactamente 2.5 segundos (2500ms) de presentación
+        // Tiempos de la secuencia
         const SPLASH_DURATION_MS = 2500;
-        const FADE_DURATION_MS = 550;
+        const LOVE_DURATION_MS = 1500;
+        const FADE_DURATION_MS = 500;
 
-        setTimeout(() => {
+        let isDismissed = false;
+        function dismissToChat() {
+          if (isDismissed) return;
+          isDismissed = true;
           splash.classList.add('splash-fade-out');
           setTimeout(() => {
             if (splash && splash.parentNode) {
               splash.parentNode.removeChild(splash);
             }
           }, FADE_DURATION_MS);
+        }
+
+        // 1. Al terminar los 2.5s de la ventana de apertura retro:
+        setTimeout(() => {
+          if (isDismissed) return;
+          if (splashWindow) {
+            splashWindow.style.display = 'none';
+          }
+          if (loveScreen) {
+            loveScreen.classList.add('active');
+            // Al hacer clic en cualquier parte de la pantalla limpia se avanza al chat
+            loveScreen.onclick = () => dismissToChat();
+          }
+
+          // 2. Duración del mensaje limpio "Chimpi te quiere" (~2.0s) antes de dar paso al chat
+          setTimeout(() => {
+            dismissToChat();
+          }, LOVE_DURATION_MS);
         }, SPLASH_DURATION_MS);
       })();
 
@@ -2445,6 +2528,7 @@
     <script src="./games/rebus.js"></script>
     <script src="./games/airhockey.js"></script>
     <script src="./games/sharedwheel.js"></script>
+    <script src="./games/worms.js"></script>
     <!-- Modo Real P2P WebRTC Chimpi & Pinchi -->
     <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script src="./turn_config.local.js" onerror="/* Opcional: solo existe en local */"></script>

@@ -1,5 +1,5 @@
-// Service Worker v44 - Diagnóstico en pantalla de señal P2P y catálogo de juegos
-const CACHE_NAME = 'msn-pinchi-v44';
+// Service Worker v45 - Diagnóstico en pantalla de señal P2P y catálogo de juegos
+const CACHE_NAME = 'msn-pinchi-v45';
 
 const CORE_ASSETS = [
   './',
@@ -32,6 +32,7 @@ const CORE_ASSETS = [
   './games/rebus.js',
   './games/airhockey.js',
   './games/sharedwheel.js',
+  './games/worms.js',
   // CDN externa para modo WebRTC
   'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js',
   // Recursos visuales, avatares e interfaz
