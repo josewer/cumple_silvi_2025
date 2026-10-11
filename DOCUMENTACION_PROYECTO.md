@@ -181,3 +181,23 @@ Implementado en `msn/live_chimpi.js` para permitir que Chimpi se conecte en dire
    - **Banner de Estado y Diagnóstico P2P en Pinchi (v44):** La cabecera del chat en el móvil de Pinchi muestra ahora su estado en tiempo real (🟡 *Iniciando red*, 🟢 *Lista para recibir a Chimpi*, ✨ *En directo* o ⚠️ *Error / Reconectando* con desglose técnico automático como `ID en uso (¿otra pestaña abierta?)`, `Sin conexión al servidor PeerJS`, o `Señal P2P desconectada`). Incluye botón interactivo `[ℹ️ Info]` que abre una alerta con el historial de eventos recientes en el móvil y botón `[🔄 Forzar]` con purga de sockets colgados, garantizando visibilidad total sin necesidad de herramientas de desarrollador.
    - **Monitoreo ICE y Prevención de Solapamiento:** Se monitoriza el estado ICE nativo de WebRTC (`failed`/`disconnected`). Chimpi descarta intentos de conexión previos no completados antes de lanzar nuevos reintentos para no saturar al receptor.
    - **Reconexión Automática en Desbloqueo:** Escucha de `visibilitychange` y `online` (ya no `focus`, que provocaba reinicios en cada toque) para restaurar la conexión al encender la pantalla del móvil o cambiar de red.
+
+---
+
+## 🌟 9. Pantalla de Bienvenida / Splash Screen Retro (MSN Messenger 7.5 & Windows XP)
+
+Implementada en `msn/index.html` para proporcionar una apertura automática e inmersiva:
+1. **Comportamiento Automático:**
+   - Carga directamente superpuesta a pantalla completa en el HTML inicial para evitar cualquier parpadeo previo del chat (`FOUC`).
+   - Duración fija de exactamente **2.5 segundos** manejada con `setTimeout`.
+   - Transición de salida suave con `fade-out` CSS (`opacity: 0; pointer-events: none; visibility: hidden;`) y descarte del nodo tras 550ms.
+2. **Estética Windows XP & MSN Messenger:**
+   - Marco de ventana con cabecera clásica *Luna Blue* y botones decorativos XP.
+   - Logotipo retro oficial de MSN Messenger.
+   - Avatares de **Pinchi (🐧)** y **Chimpi (🐷)** con animación de rebote suave (`pinchi-bounce` / `chimpi-bounce`) y puntos de conexión parpadeantes.
+   - Textos de estado nostálgicos: *"Iniciando sesión..."* y *"Conectando con Chimpi..."*.
+   - Barra de progreso clásica de Windows XP con bloques verdes deslizándose en bucle continuo (`xpMarquee`).
+   - Acorde retro polifónico sintetizado con **Web Audio API** nativo (C5-E5-G5-C6) con manejo silencioso de restricciones de autoplay de navegadores móviles.
+3. **Aislamiento Técnico:**
+   - 100% Vanilla HTML5, CSS3 y JS nativo sin librerías externas ni npm.
+   - Desacoplado: No interfiere en la sincronización WebRTC (`live_chimpi.js`), minijuegos ni el Service Worker (`sw.js`).
