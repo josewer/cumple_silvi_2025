@@ -152,7 +152,7 @@ var MSN_GAMES_CATALOG = [
   {
     id: 'puzzle',
     title: 'Puzzle Deslizante',
-    desc: 'Ordena las piezas de vuestra foto',
+    desc: 'Modo libre o Carrera online (3 puzzles) 🐧 vs 🐷',
     icon: '🧩',
     fn: 'openPuzzleGame'
   },
@@ -286,7 +286,7 @@ function openGamesHub() {
 
   if (title) title.textContent = '🎮 MSN Games - Salón de Juegos Retro';
 
-  var liveGameIds = ['tictactoe', 'memory', 'battleship', 'connect4', 'buzzduel', 'whiteboard', 'snowbattle', 'tugofwar', 'synctest', 'rebus', 'airhockey', 'sharedwheel'];
+  var liveGameIds = ['tictactoe', 'memory', 'battleship', 'connect4', 'buzzduel', 'whiteboard', 'snowbattle', 'tugofwar', 'synctest', 'rebus', 'airhockey', 'sharedwheel', 'puzzle'];
 
   var visibleCatalog = MSN_GAMES_CATALOG.filter(function(g) { return !g.hidden; });
 
@@ -343,6 +343,17 @@ function openGamesHub() {
 }
 window.openGamesHub = openGamesHub;
 
+function selectPzLiveSize(size, btn) {
+  window.selectedPzLiveGridSize = size;
+  var container = document.getElementById('pzLiveSizeSelector');
+  if (container) {
+    var btns = container.querySelectorAll('.pz-mode-btn');
+    btns.forEach(function(b) { b.classList.remove('active'); });
+  }
+  if (btn) btn.classList.add('active');
+}
+window.selectPzLiveSize = selectPzLiveSize;
+
 function showLiveGameChoice(g) {
   var content = window.gameContent || document.getElementById('gameContent');
   var title = window.gameTitle || document.getElementById('gameTitle');
@@ -351,16 +362,32 @@ function showLiveGameChoice(g) {
   var isChimpi = !!window._isChimpiMode;
   var opponent = isChimpi ? 'Pinchi 🐧' : 'Chimpi 🐷';
 
+  window.selectedPzLiveGridSize = window.selectedPzLiveGridSize || 3;
+
+  var extraSelectorHtml = '';
+  if (g.id === 'puzzle') {
+    extraSelectorHtml =
+      '<div style="margin:4px auto 14px;text-align:center;">' +
+        '<div style="font-size:11px;font-weight:bold;color:#444;margin-bottom:6px;">Dificultad de la carrera:</div>' +
+        '<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;" id="pzLiveSizeSelector">' +
+          '<button type="button" class="pz-mode-btn ' + (window.selectedPzLiveGridSize === 3 ? 'active' : '') + '" onclick="selectPzLiveSize(3, this)">3 × 3 (Fácil)</button>' +
+          '<button type="button" class="pz-mode-btn ' + (window.selectedPzLiveGridSize === 4 ? 'active' : '') + '" onclick="selectPzLiveSize(4, this)">4 × 4 (Normal)</button>' +
+          '<button type="button" class="pz-mode-btn ' + (window.selectedPzLiveGridSize === 5 ? 'active' : '') + '" onclick="selectPzLiveSize(5, this)">5 × 5 (Reto)</button>' +
+        '</div>' +
+      '</div>';
+  }
+
   if (content) {
     content.innerHTML =
       '<div style="text-align:center;padding:16px 8px;">' +
         '<div style="font-size:42px;margin-bottom:8px;">' + g.icon + '</div>' +
         '<div style="font-weight:bold;font-size:16px;color:#004a9f;margin-bottom:6px;">' + g.title + '</div>' +
-        '<div style="font-size:13px;color:#444;margin-bottom:18px;max-width:300px;margin-left:auto;margin-right:auto;">' +
+        '<div style="font-size:13px;color:#444;margin-bottom:' + (g.id === 'puzzle' ? '8px' : '18px') + ';max-width:300px;margin-left:auto;margin-right:auto;">' +
           '🟢 ¡Estás conectado en directo con <b>' + opponent + '</b>! ¿Cómo quieres jugar?' +
         '</div>' +
+        extraSelectorHtml +
         '<div style="display:flex;flex-direction:column;gap:10px;max-width:270px;margin:0 auto;">' +
-          '<button class="msn-game-launch-btn" style="background:#28a745;padding:10px 14px;font-size:13px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'' + g.id + '\');">' +
+          '<button class="msn-game-launch-btn" style="background:#28a745;padding:10px 14px;font-size:13px;font-weight:bold;" onclick="closeGameModal(); if(typeof window.sendLiveGameInvite === \'function\') window.sendLiveGameInvite(\'' + g.id + '\', { gridSize: window.selectedPzLiveGridSize || 3 });">' +
             '📨 Enviar Invitación a ' + opponent +
           '</button>' +
           '<button class="msn-game-launch-btn" style="background:#6c757d;padding:8px 12px;font-size:12px;" onclick="window[\'' + g.fn + '\'](true);">' +

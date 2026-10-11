@@ -827,6 +827,19 @@
           if (typeof window._handleRemoteWheelSpin === 'function') window._handleRemoteWheelSpin(data);
           break;
 
+        case 'PZ_PROGRESS':
+          if (typeof window._handleRemotePuzzleProgress === 'function') window._handleRemotePuzzleProgress(data);
+          break;
+        case 'PZ_ROUND_CLEAR':
+          if (typeof window._handleRemotePuzzleRoundClear === 'function') window._handleRemotePuzzleRoundClear(data);
+          break;
+        case 'PZ_MATCH_WON':
+          if (typeof window._handleRemotePuzzleMatchWon === 'function') window._handleRemotePuzzleMatchWon(data);
+          break;
+        case 'PZ_REMATCH':
+          if (typeof window._handleRemotePuzzleRematch === 'function') window._handleRemotePuzzleRematch(data);
+          break;
+
         case 'open_game':
           if (data.game === 'tictactoe' && typeof openTicTacToeGame === 'function') openTicTacToeGame();
           else if (data.game === 'memory' && typeof openMemoryGame === 'function') openMemoryGame(data.deckItemIds, data.startingTurn, true);
@@ -840,6 +853,7 @@
           else if (data.game === 'rebus' && typeof openRebusGame === 'function') openRebusGame();
           else if (data.game === 'airhockey' && typeof openAirHockeyGame === 'function') openAirHockeyGame();
           else if (data.game === 'sharedwheel' && typeof openSharedWheelGame === 'function') openSharedWheelGame();
+          else if (data.game === 'puzzle' && typeof openPuzzleGame === 'function') openPuzzleGame(data.raceConfig || null, !!data.raceConfig);
           else if (typeof openGamesHub === 'function') openGamesHub();
           break;
 
@@ -996,13 +1010,16 @@
   // ---------------------------------------------------------------------------
   // SISTEMA DE INVITACIONES A JUEGOS EN MODO LIVE (ESTILO MSN MESSENGER RETRO)
   // ---------------------------------------------------------------------------
-  window.sendLiveGameInvite = function (gameId) {
+  window.sendLiveGameInvite = function (gameId, extraOptions) {
     if (!activeConn || !activeConn.open) {
       if (gameId === 'tictactoe' && typeof openTicTacToeGame === 'function') openTicTacToeGame();
       else if (gameId === 'memory' && typeof openMemoryGame === 'function') openMemoryGame();
       else if (gameId === 'battleship' && typeof openBattleshipGame === 'function') openBattleshipGame();
+      else if (gameId === 'puzzle' && typeof openPuzzleGame === 'function') openPuzzleGame();
       return;
     }
+
+    const chosenGridSize = (extraOptions && extraOptions.gridSize) ? extraOptions.gridSize : 3;
 
     const gameMap = {
       tictactoe: { title: 'Tres en Raya MSN', icon: '❌⭕' },
@@ -1016,7 +1033,8 @@
       synctest: { title: 'Desafío Telepático', icon: '🔮' },
       rebus: { title: 'Jeroglífico MSN', icon: '😎' },
       airhockey: { title: 'Air Hockey MSN', icon: '🏒' },
-      sharedwheel: { title: 'Ruleta de Pareja', icon: '🎡' }
+      sharedwheel: { title: 'Ruleta de Pareja', icon: '🎡' },
+      puzzle: { title: `Carrera de Puzzles ${chosenGridSize}×${chosenGridSize} (3 Rondas)`, icon: '🧩🏁' }
     };
     const g = gameMap[gameId] || { title: 'Juego MSN', icon: '🎮' };
     const inviteId = 'inv_' + Date.now();
@@ -1030,7 +1048,13 @@
     }
     window._lastInviteDeck = deckItemIds;
 
-    // 1. Enviar paquete WebRTC a la otra persona con la baraja idéntica
+    let puzzleRaceConfig = null;
+    if (gameId === 'puzzle' && typeof window.generatePuzzleRaceConfig === 'function') {
+      puzzleRaceConfig = window.generatePuzzleRaceConfig(chosenGridSize);
+    }
+    window._lastPuzzleConfig = puzzleRaceConfig;
+
+    // 1. Enviar paquete WebRTC a la otra persona con la baraja o configuración idéntica
     try {
       activeConn.send({
         type: 'game_invite',
@@ -1040,7 +1064,8 @@
         gameIcon: g.icon,
         from: myName,
         fromSymbol: mySymbol,
-        deckItemIds: deckItemIds
+        deckItemIds: deckItemIds,
+        puzzleRaceConfig: puzzleRaceConfig
       });
     } catch (e) {
       console.warn('Error enviando invitación WebRTC:', e);
@@ -1069,6 +1094,9 @@
 
     if (data.gameId === 'memory' && Array.isArray(data.deckItemIds)) {
       window._incomingInviteDeck = data.deckItemIds;
+    }
+    if (data.gameId === 'puzzle' && data.puzzleRaceConfig) {
+      window._incomingPuzzleConfig = data.puzzleRaceConfig;
     }
 
     // Sonido clásico de notificación de MSN
@@ -1122,6 +1150,7 @@
           gameId: gameId,
           accepted: accepted,
           deckItemIds: window._incomingInviteDeck || null,
+          puzzleRaceConfig: window._incomingPuzzleConfig || null,
           from: myName
         });
       } catch (e) {}
@@ -1142,6 +1171,7 @@
         else if (gameId === 'rebus' && typeof openRebusGame === 'function') openRebusGame();
         else if (gameId === 'airhockey' && typeof openAirHockeyGame === 'function') openAirHockeyGame();
         else if (gameId === 'sharedwheel' && typeof openSharedWheelGame === 'function') openSharedWheelGame();
+        else if (gameId === 'puzzle' && typeof openPuzzleGame === 'function') openPuzzleGame(window._incomingPuzzleConfig || (typeof generatePuzzleRaceConfig === 'function' ? generatePuzzleRaceConfig() : null), true);
       }, 400);
     }
   };
@@ -1172,6 +1202,7 @@
         else if (data.gameId === 'rebus' && typeof openRebusGame === 'function') openRebusGame();
         else if (data.gameId === 'airhockey' && typeof openAirHockeyGame === 'function') openAirHockeyGame();
         else if (data.gameId === 'sharedwheel' && typeof openSharedWheelGame === 'function') openSharedWheelGame();
+        else if (data.gameId === 'puzzle' && typeof openPuzzleGame === 'function') openPuzzleGame(data.puzzleRaceConfig || window._lastPuzzleConfig, true);
       }, 400);
     } else {
       if (inviteBox) {
